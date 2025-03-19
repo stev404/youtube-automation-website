@@ -1,16 +1,21 @@
 import streamlit as st
 import requests
 import json
-import os
+import random
 from datetime import datetime
 
-# Page configuration
+# Configuration
+BACKEND_URL = "https://your-backend-url.onrender.com"  # Replace with your actual backend URL
+
+# Page title and configuration
 st.set_page_config(
     page_title="YouTube Content Automation",
-    page_icon="📺",
-    layout="wide"
-)
-# Add this function to handle OAuth callback
+    page_icon="🎬",
+    layout="wide",
+    initial_sidebar_state="expanded"
+) 
+
+# OAuth callback handler
 def handle_oauth_callback():
     # Get the authorization code from URL parameters
     code = st.experimental_get_query_params().get("code", [""])[0]
@@ -26,26 +31,125 @@ def handle_oauth_callback():
 if "code" in st.experimental_get_query_params():
     handle_oauth_callback()
 
-# Initialize session state variables if they don't exist
-if 'facts_generated' not in st.session_state:
-    st.session_state.facts_generated = 0
-if 'scripts_created' not in st.session_state:
-    st.session_state.scripts_created = 0
-if 'videos_assembled' not in st.session_state:
-    st.session_state.videos_assembled = 0
-if 'videos_published' not in st.session_state:
-    st.session_state.videos_published = 0
+# Initialize session state
+if 'facts' not in st.session_state:
+    st.session_state.facts = []
+if 'scripts' not in st.session_state:
+    st.session_state.scripts = []
+if 'videos' not in st.session_state:
+    st.session_state.videos = []
+if 'published_videos' not in st.session_state:
+    st.session_state.published_videos = []
 
 # Sidebar navigation
 st.sidebar.title("YouTube Automation")
-st.sidebar.markdown("### Navigation")
-page = st.sidebar.radio(
-    "Select a page:",
+st.sidebar.markdown("---")
+
+# Navigation
+navigation = st.sidebar.radio(
+    "Navigation",
     ["Dashboard", "Content Generation", "Video Creation", "Publishing", "Analytics", "Settings", "Help"]
 )
 
+# Helper functions
+def fetch_facts():
+    try:
+        response = requests.get(f"{BACKEND_URL}/api/facts")
+        if response.status_code == 200:
+            return response.json()
+        else:
+            st.error(f"Error fetching facts: {response.status_code}")
+            return []
+    except Exception as e:
+        st.error(f"Error connecting to backend: {str(e)}")
+        return []
+
+def generate_facts(num_facts=5, categories=None):
+    if categories is None:
+        categories = ["Science", "History", "Nature", "Technology"]
+    
+    try:
+        response = requests.post(
+            f"{BACKEND_URL}/api/facts/generate",
+            json={"num_facts": num_facts, "categories": categories}
+        )
+        if response.status_code == 201:
+            return response.json()
+        else:
+            st.error(f"Error generating facts: {response.status_code}")
+            return []
+    except Exception as e:
+        st.error(f"Error connecting to backend: {str(e)}")
+        return []
+
+def generate_scripts(fact_ids):
+    try:
+        response = requests.post(
+            f"{BACKEND_URL}/api/scripts/generate",
+            json={"fact_ids": fact_ids}
+        )
+        if response.status_code == 201:
+            return response.json()
+        else:
+            st.error(f"Error generating scripts: {response.status_code}")
+            return []
+    except Exception as e:
+        st.error(f"Error connecting to backend: {str(e)}")
+        return []
+
+def assemble_videos(script_ids, resolution="1080p", voice_type="Male"):
+    try:
+        response = requests.post(
+            f"{BACKEND_URL}/api/videos/assemble",
+            json={
+                "script_ids": script_ids,
+                "resolution": resolution,
+                "voice_type": voice_type
+            }
+        )
+        if response.status_code == 201:
+            return response.json()
+        else:
+            st.error(f"Error assembling videos: {response.status_code}")
+            return []
+    except Exception as e:
+        st.error(f"Error connecting to backend: {str(e)}")
+        return []
+
+def publish_videos(video_ids, privacy="Public"):
+    try:
+        # Check if YouTube credentials are configured
+        if 'youtube_client_id' in st.session_state and 'youtube_client_secret' in st.session_state:
+            # In a real implementation, you would use these credentials
+            pass
+        
+        response = requests.post(
+            f"{BACKEND_URL}/api/publish",
+            json={"video_ids": video_ids, "privacy": privacy}
+        )
+        if response.status_code == 201:
+            return response.json()
+        else:
+            st.error(f"Error publishing videos: {response.status_code}")
+            return []
+    except Exception as e:
+        st.error(f"Error connecting to backend: {str(e)}")
+        return []
+
+def get_analytics():
+    try:
+        response = requests.get(f"{BACKEND_URL}/api/analytics")
+        if response.status_code == 200:
+            return response.json()
+        else:
+            st.error(f"Error fetching analytics: {response.status_code}")
+            return {}
+    except Exception as e:
+        st.error(f"Error connecting to backend: {str(e)}")
+        return {}
+
 # Dashboard page
-if page == "Dashboard":
+if navigation == "Dashboard":
     st.title("YouTube Content Automation Dashboard")
     
     # System Status
@@ -53,775 +157,465 @@ if page == "Dashboard":
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        st.metric("Facts Generated", st.session_state.facts_generated)
+        st.metric("Facts Generated", len(st.session_state.facts))
     with col2:
-        st.metric("Scripts Created", st.session_state.scripts_created)
+        st.metric("Scripts Created", len(st.session_state.scripts))
     with col3:
-        st.metric("Videos Assembled", st.session_state.videos_assembled)
+        st.metric("Videos Assembled", len(st.session_state.videos))
     with col4:
-        st.metric("Videos Published", st.session_state.videos_published)
+        st.metric("Videos Published", len(st.session_state.published_videos))
     
     # Quick Actions
     st.header("Quick Actions")
-    quick_action_cols = st.columns(4)
+    col1, col2, col3, col4 = st.columns(4)
     
-    with quick_action_cols[0]:
+    with col1:
         if st.button("Generate Content"):
-            st.session_state.facts_generated += 10
-            st.success("Generated 10 new facts!")
-            st.balloons()
+            st.session_state.facts.extend(generate_facts())
+            st.success("Content generated successfully!")
     
-    with quick_action_cols[1]:
+    with col2:
         if st.button("Create Videos"):
-            if st.session_state.facts_generated > st.session_state.scripts_created:
-                st.session_state.scripts_created += 5
-                st.session_state.videos_assembled += 5
-                st.success("Created 5 new videos!")
+            if st.session_state.facts:
+                fact_ids = [fact["id"] for fact in st.session_state.facts[:5]]
+                scripts = generate_scripts(fact_ids)
+                st.session_state.scripts.extend(scripts)
+                
+                script_ids = [script["id"] for script in scripts]
+                videos = assemble_videos(script_ids)
+                st.session_state.videos.extend(videos)
+                
+                st.success("Videos created successfully!")
             else:
-                st.warning("Generate more facts first!")
+                st.warning("No facts available. Generate content first.")
     
-    with quick_action_cols[2]:
+    with col3:
         if st.button("Publish Videos"):
-            if st.session_state.videos_assembled > st.session_state.videos_published:
-                st.session_state.videos_published += 3
-                st.success("Published 3 videos to YouTube!")
+            if st.session_state.videos:
+                video_ids = [video["id"] for video in st.session_state.videos[:3]]
+                published = publish_videos(video_ids)
+                st.session_state.published_videos.extend(published)
+                
+                st.success("Videos published successfully!")
             else:
-                st.warning("Create more videos first!")
+                st.warning("No videos available. Create videos first.")
     
-    with quick_action_cols[3]:
+    with col4:
         if st.button("Run Analytics"):
-            st.info("Analytics updated!")
+            st.session_state.analytics = get_analytics()
+            st.success("Analytics updated!")
     
     # Recent Activity
     st.header("Recent Activity")
     
     # Sample activity data
     activities = [
-        {"time": "Today, 2:30 PM", "action": "Video published - 5 Amazing Facts About Deep Sea Creatures"},
-        {"time": "Today, 10:15 AM", "action": "Content generated - 10 new facts about Ancient History"},
-        {"time": "Yesterday, 4:45 PM", "action": "Analytics updated - Performance report for last week"},
-        {"time": "2 days ago", "action": "Video created - Fascinating Facts About the Human Brain"}
+        {"time": "Today, 2:30 PM", "action": "Video published", "details": "5 Amazing Facts About Deep Sea Creatures"},
+        {"time": "Today, 10:15 AM", "action": "Content generated", "details": "10 new facts about Ancient History"},
+        {"time": "Yesterday, 4:45 PM", "action": "Analytics updated", "details": "Performance report for last week"},
+        {"time": "2 days ago", "action": "Video created", "details": "Fascinating Facts About the Human Brain"}
     ]
     
     for activity in activities:
-        st.markdown(f"**{activity['time']}:** {activity['action']}")
+        st.write(f"{activity['time']}: {activity['action']} - {activity['details']}")
 
 # Content Generation page
-elif page == "Content Generation":
+elif navigation == "Content Generation":
     st.title("Content Generation")
     
     st.write("Generate interesting 'Did You Know' facts for your videos.")
     
-    # Fact generation settings
-    st.subheader("Fact Generation Settings")
-    
+    # Fact categories
+    st.subheader("Select Categories")
     col1, col2 = st.columns(2)
     
     with col1:
-        num_facts = st.number_input("Number of facts to generate", min_value=1, max_value=100, value=10)
-        fact_length = st.select_slider("Fact length", options=["Short", "Medium", "Long"], value="Medium")
+        science = st.checkbox("Science", value=True)
+        history = st.checkbox("History", value=True)
     
     with col2:
-        categories = st.multiselect(
-            "Fact categories",
-            ["Science", "History", "Nature", "Space", "Technology", "Psychology", "Art", "Food", "Geography"],
-            ["Science", "History", "Nature"]
-        )
-        
-        reliability = st.slider("Source reliability", min_value=1, max_value=10, value=8)
+        nature = st.checkbox("Nature", value=True)
+        technology = st.checkbox("Technology", value=True)
     
+    categories = []
+    if science:
+        categories.append("Science")
+    if history:
+        categories.append("History")
+    if nature:
+        categories.append("Nature")
+    if technology:
+        categories.append("Technology")
+    
+    # Number of facts to generate
+    num_facts = st.slider("Number of facts to generate", 1, 20, 5)
+    
+    # Generate button
     if st.button("Generate Facts"):
-        with st.spinner("Generating interesting facts..."):
-            # Simulate API call delay
-            import time
-            time.sleep(2)
-            
-            # Sample facts based on selected categories
-            sample_facts = {
-                "Science": [
-                    "The human body contains enough carbon to fill about 9,000 pencils.",
-                    "A teaspoonful of neutron star would weigh about 6 billion tons.",
-                    "The average person walks the equivalent of three times around the world in a lifetime."
-                ],
-                "History": [
-                    "The shortest war in history was between Britain and Zanzibar in 1896, lasting only 38 minutes.",
-                    "Ancient Egyptians used to use honey as an offering to their gods.",
-                    "The first recorded use of 'OMG' was in a 1917 letter to Winston Churchill."
-                ],
-                "Nature": [
-                    "Octopuses have three hearts, nine brains, and blue blood.",
-                    "Bananas are berries, but strawberries aren't.",
-                    "A group of flamingos is called a 'flamboyance'."
-                ],
-                "Space": [
-                    "There are more stars in the universe than grains of sand on all the beaches on Earth.",
-                    "A day on Venus is longer than a year on Venus.",
-                    "The Great Red Spot on Jupiter is a storm that has been raging for at least 400 years."
-                ],
-                "Technology": [
-                    "The first computer bug was an actual real-life bug - a moth was found in the Harvard Mark II computer in 1947.",
-                    "The average smartphone user touches their phone 2,617 times a day.",
-                    "The first message sent over the internet was 'LO'. It was supposed to be 'LOGIN' but the system crashed."
-                ]
-            }
-            
-            # Display generated facts
-            st.subheader("Generated Facts")
-            displayed_facts = []
-            
-            for category in categories:
-                if category in sample_facts:
-                    for fact in sample_facts[category]:
-                        displayed_facts.append(fact)
-                        if len(displayed_facts) >= num_facts:
-                            break
-                if len(displayed_facts) >= num_facts:
-                    break
-            
-            for i, fact in enumerate(displayed_facts[:num_facts]):
-                st.write(f"{i+1}. {fact}")
-            
-            st.session_state.facts_generated += num_facts
-            st.success(f"Successfully generated {num_facts} facts!")
+        with st.spinner("Generating facts..."):
+            new_facts = generate_facts(num_facts, categories)
+            st.session_state.facts.extend(new_facts)
+            st.success(f"Generated {len(new_facts)} new facts!")
     
-    # Fact sources
-    st.subheader("Fact Sources")
-    st.write("Configure your fact sources and reliability settings.")
+    # Display facts
+    st.subheader("Generated Facts")
     
-    sources = [
-        {"name": "Wikipedia", "reliability": 7, "enabled": True},
-        {"name": "Scientific Journals", "reliability": 9, "enabled": True},
-        {"name": "News Websites", "reliability": 6, "enabled": True},
-        {"name": "Educational Websites", "reliability": 8, "enabled": True}
-    ]
-    
-    for i, source in enumerate(sources):
-        col1, col2, col3 = st.columns([3, 2, 1])
-        with col1:
-            st.write(source["name"])
-        with col2:
-            st.write(f"Reliability: {source['reliability']}/10")
-        with col3:
-            sources[i]["enabled"] = st.checkbox("Enable", value=source["enabled"], key=f"source_{i}")
+    if not st.session_state.facts:
+        st.info("No facts generated yet. Click 'Generate Facts' to get started.")
+    else:
+        for i, fact in enumerate(st.session_state.facts):
+            with st.expander(f"Fact #{i+1}: {fact['content'][:50]}..."):
+                st.write(f"**Category:** {fact['category']}")
+                st.write(f"**Content:** {fact['content']}")
+                st.write(f"**Created:** {fact['created_at']}")
+                
+                # Create script button
+                if st.button(f"Create Script for Fact #{i+1}"):
+                    scripts = generate_scripts([fact['id']])
+                    if scripts:
+                        st.session_state.scripts.extend(scripts)
+                        st.success("Script created successfully!")
 
 # Video Creation page
-elif page == "Video Creation":
+elif navigation == "Video Creation":
     st.title("Video Creation")
     
-    # Tabs for different stages of video creation
-    tabs = st.tabs(["Script Generation", "Media Selection", "Video Assembly"])
+    st.write("Create videos from your generated scripts.")
     
-    # Script Generation tab
-    with tabs[0]:
-        st.header("Script Generation")
-        st.write("Convert facts into engaging video scripts.")
+    # Display scripts
+    st.subheader("Available Scripts")
+    
+    if not st.session_state.scripts:
+        st.info("No scripts available. Go to Content Generation to create scripts.")
+    else:
+        selected_scripts = []
+        
+        for i, script in enumerate(st.session_state.scripts):
+            selected = st.checkbox(f"Script #{i+1}: {script['content'][:50]}...", key=f"script_{i}")
+            if selected:
+                selected_scripts.append(script['id'])
+            
+            with st.expander(f"View Script #{i+1}"):
+                st.write(script['content'])
+        
+        # Video settings
+        st.subheader("Video Settings")
         
         col1, col2 = st.columns(2)
         
         with col1:
-            script_format = st.selectbox(
-                "Script format",
-                ["Conversational", "Educational", "Humorous", "Dramatic", "Inspirational"]
-            )
-            
-            script_length = st.select_slider(
-                "Script length",
-                options=["15 seconds", "30 seconds", "60 seconds", "2 minutes", "5 minutes"],
-                value="60 seconds"
-            )
+            resolution = st.selectbox("Resolution", ["720p", "1080p", "1440p"], index=1)
         
         with col2:
-            language_style = st.selectbox(
-                "Language style",
-                ["Formal", "Casual", "Enthusiastic", "Mysterious", "Technical"]
-            )
-            
-            include_questions = st.checkbox("Include rhetorical questions", value=True)
+            voice_type = st.selectbox("Voice Type", ["Male", "Female", "Neutral"], index=0)
         
-        if st.button("Generate Scripts"):
-            with st.spinner("Generating scripts..."):
-                # Simulate API call delay
-                import time
-                time.sleep(2)
-                
-                st.subheader("Generated Scripts")
-                
-                # Sample script
-                sample_script = """
-                [INTRO]
-                Did you know that octopuses have three hearts, nine brains, and blue blood?
-                
-                [MAIN CONTENT]
-                That's right! These incredible creatures have two hearts that pump blood through their gills, and a third heart that circulates blood through the rest of their body.
-                
-                Their nine brains include a central brain and eight additional mini-brains - one for each arm. This allows each arm to think and act independently!
-                
-                And unlike our red blood, which gets its color from iron, octopus blood contains copper, giving it a blue appearance.
-                
-                [OUTRO]
-                Next time you see an octopus, remember you're looking at one of the most alien-like creatures on our own planet!
-                """
-                
-                st.text_area("Script 1", sample_script, height=300)
-                
-                st.session_state.scripts_created += 1
-                st.success("Script generated successfully!")
+        # Create videos button
+        if st.button("Create Videos"):
+            if selected_scripts:
+                with st.spinner("Creating videos..."):
+                    videos = assemble_videos(selected_scripts, resolution, voice_type)
+                    st.session_state.videos.extend(videos)
+                    st.success(f"Created {len(videos)} videos!")
+            else:
+                st.warning("Please select at least one script.")
     
-    # Media Selection tab
-    with tabs[1]:
-        st.header("Media Selection")
-        st.write("Select images, videos, and audio for your content.")
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            image_source = st.multiselect(
-                "Image sources",
-                ["Pixabay", "Pexels", "Unsplash", "iStock", "Adobe Stock"],
-                ["Pixabay", "Pexels", "Unsplash"]
-            )
-            
-            video_source = st.multiselect(
-                "Video sources",
-                ["Pixabay", "Pexels", "Coverr", "Videvo", "Adobe Stock"],
-                ["Pixabay", "Pexels"]
-            )
-        
-        with col2:
-            audio_source = st.multiselect(
-                "Audio sources",
-                ["Epidemic Sound", "Artlist", "YouTube Audio Library", "SoundCloud", "Free Music Archive"],
-                ["YouTube Audio Library", "Free Music Archive"]
-            )
-            
-            visual_style = st.selectbox(
-                "Visual style",
-                ["Minimalist", "Colorful", "Professional", "Vintage", "Modern", "Abstract"]
-            )
-        
-        if st.button("Select Media"):
-            with st.spinner("Selecting media..."):
-                # Simulate API call delay
-                import time
-                time.sleep(2)
-                
-                st.subheader("Selected Media")
-                
-                # Sample media selection
-                col1, col2, col3 = st.columns(3)
-                
-                with col1:
-                    st.image("https://images.pexels.com/photos/1069927/pexels-photo-1069927.jpeg?auto=compress&cs=tinysrgb&w=600", caption="Octopus - Main Image") 
-                
-                with col2:
-                    st.image("https://images.pexels.com/photos/3377405/pexels-photo-3377405.jpeg?auto=compress&cs=tinysrgb&w=600", caption="Ocean - Background") 
-                
-                with col3:
-                    st.image("https://images.pexels.com/photos/3094799/pexels-photo-3094799.jpeg?auto=compress&cs=tinysrgb&w=600", caption="Marine Life - Supporting Image") 
-                
-                st.write("**Selected Audio:** Underwater Ambience - YouTube Audio Library")
-                
-                st.success("Media selected successfully!")
+    # Display videos
+    st.subheader("Created Videos")
     
-    # Video Assembly tab
-    with tabs[2]:
-        st.header("Video Assembly")
-        st.write("Combine scripts, images, and audio into complete videos.")
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            resolution = st.selectbox(
-                "Resolution",
-                ["720p", "1080p", "1440p", "4K"]
-            )
-            
-            frame_rate = st.selectbox(
-                "Frame rate",
-                ["24 fps", "30 fps", "60 fps"]
-            )
-        
-        with col2:
-            format = st.selectbox(
-                "Format",
-                ["MP4", "MOV", "AVI", "WMV"]
-            )
-            
-            quality = st.select_slider(
-                "Quality",
-                options=["Low", "Medium", "High", "Ultra"],
-                value="High"
-            )
-        
-        st.subheader("Voice Settings")
-        
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            voice_provider = st.selectbox(
-                "Voice provider",
-                ["ElevenLabs", "Murf.ai", "Google TTS", "Amazon Polly", "Microsoft Azure"]
-            )
-        
-        with col2:
-            voice_gender = st.selectbox(
-                "Voice type",
-                ["Male", "Female", "Neutral"]
-            )
-        
-        with col3:
-            voice_accent = st.selectbox(
-                "Voice accent",
-                ["American", "British", "Australian", "Indian", "German", "French"]
-            )
-        
-        if st.button("Assemble Video"):
-            with st.spinner("Assembling video..."):
-                # Simulate API call delay
-                import time
-                time.sleep(3)
+    if not st.session_state.videos:
+        st.info("No videos created yet.")
+    else:
+        for i, video in enumerate(st.session_state.videos):
+            with st.expander(f"Video #{i+1}: {video['title']}"):
+                st.write(f"**Resolution:** {video['resolution']}")
+                st.write(f"**Voice Type:** {video['voice_type']}")
+                st.write(f"**Duration:** {video['duration']}")
+                st.write(f"**Status:** {video['status']}")
                 
-                st.subheader("Assembled Video")
-                
-                # Sample video player (using a placeholder image)
-                st.image("https://images.pexels.com/photos/1069927/pexels-photo-1069927.jpeg?auto=compress&cs=tinysrgb&w=600", caption="Video Preview") 
-                
-                st.write("**Title:** Amazing Facts About Octopuses")
-                st.write("**Duration:** 60 seconds")
-                st.write("**Size:** 24.7 MB")
-                
-                st.session_state.videos_assembled += 1
-                st.success("Video assembled successfully!")
-                st.balloons()
+                # Publish button
+                if st.button(f"Publish Video #{i+1}"):
+                    published = publish_videos([video['id']])
+                    if published:
+                        st.session_state.published_videos.extend(published)
+                        st.success("Video published successfully!")
 
 # Publishing page
-elif page == "Publishing":
+elif navigation == "Publishing":
     st.title("Publishing")
     
-    # Tabs for different aspects of publishing
-    tabs = st.tabs(["YouTube Settings", "Publish Videos", "SEO Settings"])
+    st.write("Publish your videos to YouTube.")
     
-    # YouTube Settings tab
-    with tabs[0]:
-        st.header("YouTube Settings")
-        st.write("Configure your YouTube API credentials and channel settings.")
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            client_id = st.text_input("Client ID", type="password")
-            client_secret = st.text_input("Client Secret", type="password")
-        
-        with col2:
-            redirect_uri = st.text_input("Redirect URI", "http://localhost:8501/oauth2callback") 
-            channel_id = st.text_input("Channel ID (optional)")
-        
-        if st.button("Authenticate"):
-            if client_id and client_secret:
-                st.success("Authentication successful! Connected to YouTube channel.")
-            else:
-                st.error("Please enter your Client ID and Client Secret.")
+    # Check if YouTube API is configured
+    if 'youtube_client_id' not in st.session_state or 'youtube_client_secret' not in st.session_state:
+        st.warning("YouTube API credentials not configured. Please go to Settings to configure your YouTube API credentials.")
     
-    # Publish Videos tab
-    with tabs[1]:
-        st.header("Publish Videos")
-        st.write("Upload and schedule your videos for publishing on YouTube.")
+    # Display videos
+    st.subheader("Videos Ready for Publishing")
+    
+    if not st.session_state.videos:
+        st.info("No videos available for publishing. Go to Video Creation to create videos.")
+    else:
+        selected_videos = []
         
-        # Sample videos ready for publishing
-        videos = [
-            {"title": "Amazing Facts About Octopuses", "duration": "60 seconds", "status": "Ready"},
-            {"title": "The Shortest War in History", "duration": "45 seconds", "status": "Ready"},
-            {"title": "Fascinating Facts About Bananas", "duration": "50 seconds", "status": "Ready"}
-        ]
+        for i, video in enumerate(st.session_state.videos):
+            # Skip already published videos
+            if any(pv['video_id'] == video['id'] for pv in st.session_state.published_videos):
+                continue
+                
+            selected = st.checkbox(f"Video #{i+1}: {video['title']}", key=f"pub_video_{i}")
+            if selected:
+                selected_videos.append(video['id'])
         
-        st.subheader("Videos Ready for Publishing")
-        
-        for i, video in enumerate(videos):
-            col1, col2, col3, col4 = st.columns([3, 2, 2, 1])
-            
-            with col1:
-                st.write(video["title"])
-            
-            with col2:
-                st.write(video["duration"])
-            
-            with col3:
-                st.write(video["status"])
-            
-            with col4:
-                videos[i]["selected"] = st.checkbox("Select", key=f"publish_{i}")
-        
+        # Publishing settings
         st.subheader("Publishing Settings")
         
-        col1, col2 = st.columns(2)
+        privacy = st.selectbox("Privacy Setting", ["Public", "Unlisted", "Private"], index=0)
         
-        with col1:
-            privacy = st.selectbox(
-                "Privacy status",
-                ["Public", "Unlisted", "Private"]
-            )
-            
-            monetization = st.checkbox("Enable monetization", value=True)
-        
-        with col2:
-            publish_time = st.radio(
-                "Publishing time",
-                ["Publish immediately", "Schedule for later"]
-            )
-            
-            if publish_time == "Schedule for later":
-                schedule_date = st.date_input("Schedule date")
-                schedule_time = st.time_input("Schedule time")
-        
-        if st.button("Publish Selected"):
-            selected_count = sum(1 for video in videos if video.get("selected", False))
-            
-            if selected_count > 0:
-                with st.spinner(f"Publishing {selected_count} videos..."):
-                    # Simulate API call delay
-                    import time
-                    time.sleep(2)
-                    
-                    st.session_state.videos_published += selected_count
-                    st.success(f"Successfully published {selected_count} videos to YouTube!")
+        # Publish button
+        if st.button("Publish Selected Videos"):
+            if selected_videos:
+                with st.spinner("Publishing videos..."):
+                    published = publish_videos(selected_videos, privacy)
+                    st.session_state.published_videos.extend(published)
+                    st.success(f"Published {len(published)} videos!")
             else:
-                st.warning("Please select at least one video to publish.")
+                st.warning("Please select at least one video.")
     
-    # SEO Settings tab
-    with tabs[2]:
-        st.header("SEO Settings")
-        st.write("Optimize your videos for maximum visibility and engagement.")
-        
-        st.subheader("Title Templates")
-        title_template = st.text_area(
-            "Title template",
-            "Did You Know: {fact_summary} | Amazing Facts",
-            help="Use {fact_summary} as a placeholder for the main fact."
-        )
-        
-        st.subheader("Description Templates")
-        description_template = st.text_area(
-            "Description template",
-            """🔍 Did You Know: {fact_summary}
-
-Learn more amazing facts in this short video!
-
-⏱️ TIMESTAMPS:
-0:00 - Introduction
-0:10 - Main Fact
-0:40 - Additional Information
-
-👍 If you enjoyed this video, please like and subscribe for more amazing facts!
-
-🔗 LINKS:
-Website: https://www.amazingfacts.com
-Instagram: https://www.instagram.com/amazingfacts
-
-#DidYouKnow #{tag1} #{tag2} #Facts #Amazing
-
-*Some links may be affiliate links where I earn a small commission at no extra cost to you."""
-        ) 
-        
-        st.subheader("Tag Generation")
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            max_tags = st.number_input("Maximum number of tags", min_value=5, max_value=30, value=15)
-            include_trending = st.checkbox("Include trending tags", value=True)
-        
-        with col2:
-            tag_style = st.selectbox(
-                "Tag style",
-                ["Specific", "Broad", "Mixed"]
-            )
-            
-            auto_translate = st.checkbox("Auto-translate tags to local languages", value=False)
-        
-        st.subheader("Thumbnail Settings")
-        
-        thumbnail_style = st.selectbox(
-            "Thumbnail style",
-            ["Text Overlay", "Shocked Face", "Question Mark", "Before & After", "Minimalist"]
-        )
-        
-        ab_testing = st.checkbox("Enable A/B testing for thumbnails", value=True)
-        
-        if st.button("Save SEO Settings"):
-            st.success("SEO settings saved successfully!")
+    # Display published videos
+    st.subheader("Published Videos")
+    
+    if not st.session_state.published_videos:
+        st.info("No videos published yet.")
+    else:
+        for i, video in enumerate(st.session_state.published_videos):
+            with st.expander(f"Published Video #{i+1}: {video['title']}"):
+                st.write(f"**Privacy:** {video['privacy']}")
+                st.write(f"**Published At:** {video['published_at']}")
+                st.write(f"**YouTube URL:** {video['youtube_url']}")
+                
+                # Link to YouTube
+                st.markdown(f"[View on YouTube]({video['youtube_url']})")
 
 # Analytics page
-elif page == "Analytics":
+elif navigation == "Analytics":
     st.title("Analytics")
     
-    # Date range selector
-    col1, col2 = st.columns(2)
+    st.write("Track the performance of your YouTube channel.")
     
-    with col1:
-        date_range = st.selectbox(
-            "Date range",
-            ["Last 7 days", "Last 28 days", "Last 90 days", "Last 12 months", "Lifetime"]
-        )
+    # Refresh analytics button
+    if st.button("Refresh Analytics"):
+        with st.spinner("Fetching analytics..."):
+            st.session_state.analytics = get_analytics()
+            st.success("Analytics updated!")
     
-    with col2:
-        comparison = st.checkbox("Compare with previous period", value=False)
+    # Display analytics
+    if 'analytics' not in st.session_state:
+        st.session_state.analytics = get_analytics()
     
-    # Performance metrics
-    st.header("Performance Overview")
+    analytics = st.session_state.analytics
     
-    col1, col2, col3, col4 = st.columns(4)
-    
-    with col1:
-        st.metric("Views", "1,248", "+42%")
-    
-    with col2:
-        st.metric("Watch Time (hours)", "78.3", "+28%")
-    
-    with col3:
-        st.metric("Subscribers", "156", "+15")
-    
-    with col4:
-        st.metric("Estimated Revenue", "$12.47", "+$3.21")
-    
-    # Performance charts
-    st.header("Performance Charts")
-    
-    chart_tabs = st.tabs(["Views", "Watch Time", "Subscribers", "Revenue"])
-    
-    # Sample chart data
-    import numpy as np
-    import pandas as pd
-    
-    # Views chart
-    with chart_tabs[0]:
-        dates = pd.date_range(start="2023-01-01", periods=30, freq="D")
-        views = np.random.randint(20, 100, size=30).cumsum()
+    if not analytics:
+        st.info("No analytics data available.")
+    else:
+        # Overview metrics
+        st.subheader("Channel Overview")
         
-        chart_data = pd.DataFrame({
-            "Date": dates,
-            "Views": views
-        })
-        
-        st.line_chart(chart_data.set_index("Date"))
-    
-    # Watch Time chart
-    with chart_tabs[1]:
-        watch_time = np.random.randint(1, 10, size=30).cumsum()
-        
-        chart_data = pd.DataFrame({
-            "Date": dates,
-            "Watch Time (hours)": watch_time
-        })
-        
-        st.line_chart(chart_data.set_index("Date"))
-    
-    # Subscribers chart
-    with chart_tabs[2]:
-        subscribers = np.random.randint(0, 5, size=30).cumsum()
-        
-        chart_data = pd.DataFrame({
-            "Date": dates,
-            "Subscribers": subscribers
-        })
-        
-        st.line_chart(chart_data.set_index("Date"))
-    
-    # Revenue chart
-    with chart_tabs[3]:
-        revenue = np.random.uniform(0.1, 1.0, size=30).cumsum()
-        
-        chart_data = pd.DataFrame({
-            "Date": dates,
-            "Revenue ($)": revenue
-        })
-        
-        st.line_chart(chart_data.set_index("Date"))
-    
-    # Top performing videos
-    st.header("Top Performing Videos")
-    
-    top_videos = [
-        {"title": "Amazing Facts About Octopuses", "views": 487, "watch_time": 32.4, "ctr": "8.2%"},
-        {"title": "The Shortest War in History", "views": 342, "watch_time": 25.1, "ctr": "7.5%"},
-        {"title": "Fascinating Facts About Bananas", "views": 289, "watch_time": 18.7, "ctr": "6.9%"}
-    ]
-    
-    for video in top_videos:
-        col1, col2, col3, col4 = st.columns([3, 1, 1, 1])
+        col1, col2, col3, col4 = st.columns(4)
         
         with col1:
-            st.write(video["title"])
-        
+            st.metric("Total Views", analytics.get('views', 0))
         with col2:
-            st.write(f"Views: {video['views']}")
-        
+            st.metric("Watch Time (hours)", analytics.get('watch_time', 0))
         with col3:
-            st.write(f"Watch time: {video['watch_time']}h")
-        
+            st.metric("Subscribers", analytics.get('subscribers', 0))
         with col4:
-            st.write(f"CTR: {video['ctr']}")
-    
-    # Optimization recommendations
-    st.header("Optimization Recommendations")
-    
-    recommendations = [
-        "Increase video frequency to 3 per week for better channel growth",
-        "Focus more on Science and History topics which have higher engagement",
-        "Optimize thumbnails with more vibrant colors and text",
-        "Increase video length to 90 seconds for better monetization"
-    ]
-    
-    for recommendation in recommendations:
-        st.info(recommendation)
+            st.metric("Revenue ($)", analytics.get('revenue', 0))
+        
+        # Top videos
+        st.subheader("Top Performing Videos")
+        
+        top_videos = analytics.get('top_videos', [])
+        
+        if not top_videos:
+            st.info("No video performance data available.")
+        else:
+            for i, video in enumerate(top_videos):
+                with st.expander(f"{i+1}. {video['title']}"):
+                    st.write(f"**Views:** {video['views']}")
+                    st.write(f"**Watch Time (hours):** {video['watch_time']}")
+                    st.write(f"**Click-Through Rate:** {video['ctr']}%")
 
 # Settings page
-elif page == "Settings":
+elif navigation == "Settings":
     st.title("Settings")
     
-    # Tabs for different settings
-    tabs = st.tabs(["Workflow", "Components", "Maintenance"])
+    # Settings tabs
+    settings_tab = st.tabs(["Workflow", "Components", "Maintenance"])
     
-    # Workflow settings
-    with tabs[0]:
+    # Workflow tab
+    with settings_tab[0]:
         st.header("Workflow Settings")
         st.write("Configure automation schedules and notification preferences.")
         
+        # Automation Schedule
         st.subheader("Automation Schedule")
         
         col1, col2 = st.columns(2)
         
         with col1:
-            content_frequency = st.selectbox(
+            st.write("Content generation frequency")
+            content_freq = st.selectbox(
                 "Content generation frequency",
-                ["Daily", "Every 3 days", "Weekly", "Bi-weekly", "Monthly"]
-            )
-            
-            video_creation = st.selectbox(
-                "Video creation timing",
-                ["Immediately after content generation", "Daily batch", "Weekly batch"]
+                ["Daily", "Weekly", "Monthly", "Manual"],
+                label_visibility="collapsed"
             )
         
         with col2:
-            publishing_schedule = st.selectbox(
+            st.write("Publishing schedule")
+            publish_schedule = st.selectbox(
                 "Publishing schedule",
-                ["Publish immediately", "Daily at specific time", "Custom schedule"]
+                ["Publish immediately", "Schedule for peak hours", "Manual publishing"],
+                label_visibility="collapsed"
             )
-            
-            if publishing_schedule == "Daily at specific time":
-                publish_time = st.time_input("Publishing time")
-            elif publishing_schedule == "Custom schedule":
-                st.write("Configure custom schedule:")
-                days = st.multiselect(
-                    "Publishing days",
-                    ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-                    ["Monday", "Wednesday", "Friday"]
-                )
-                publish_time = st.time_input("Publishing time")
         
+        st.write("Video creation timing")
+        video_timing = st.selectbox(
+            "Video creation timing",
+            ["Immediately after content generation", "Daily batch processing", "Manual triggering"],
+            label_visibility="collapsed"
+        )
+        
+        # Notifications
         st.subheader("Notifications")
         
-        email_notifications = st.checkbox("Enable email notifications", value=True)
+        enable_notifications = st.checkbox("Enable email notifications")
         
-        if email_notifications:
+        if enable_notifications:
             email = st.text_input("Email address")
             
+            st.write("Notification events")
             notification_events = st.multiselect(
                 "Notification events",
-                ["Content generation complete", "Video creation complete", "Publishing complete", "Error alerts", "Performance reports"],
-                ["Content generation complete", "Publishing complete", "Error alerts"]
+                ["Content generation complete", "Publishing complete", "Error alerts"],
+                ["Content generation complete", "Publishing complete", "Error alerts"],
+                label_visibility="collapsed"
             )
         
+        # Save button
         if st.button("Save Workflow Settings"):
             st.success("Workflow settings saved successfully!")
-    # Add this in the Components tab section of your Settings page
-st.header("YouTube API Configuration")
-st.write("Configure your YouTube API credentials to enable automatic publishing.")
-
-# Create two columns for a cleaner layout
-col1, col2 = st.columns(2)
-
-with col1:
-    # YouTube API credentials
-    client_id = st.text_input("Client ID", type="password", help="Enter your Google API Client ID")
     
-with col2:
-    client_secret = st.text_input("Client Secret", type="password", help="Enter your Google API Client Secret")
-
-# Add authentication button
-if st.button("Save and Authenticate"):
-    if client_id and client_secret:
-        # Save credentials to session state or database
-        st.session_state.youtube_client_id = client_id
-        st.session_state.youtube_client_secret = client_secret
-        
-        # Show success message
-        st.success("YouTube API credentials saved successfully!")
-        
-        # In a real implementation, you would initiate OAuth flow here
-        st.info("To complete authentication, you would be redirected to Google's consent screen. This feature will be implemented in the next update.")
-    else:
-        st.error("Please enter both Client ID and Client Secret.")
-
-# Display current connection status
-st.subheader("Connection Status")
-if 'youtube_client_id' in st.session_state and 'youtube_client_secret' in st.session_state:
-    st.write("✅ YouTube API credentials are configured")
-else:
-    st.write("❌ YouTube API credentials not configured")
-
-    # Component settings
-    with tabs[1]:
+    # Components tab
+    with settings_tab[1]:
         st.header("Component Settings")
         st.write("Configure individual components of the automation system.")
         
-        components = ["Fact Researcher", "Script Generator", "Media Selector", "Voiceover Generator", "Video Assembler", "YouTube Publisher", "Analytics Optimizer"]
+        # Fact Researcher
+        st.subheader("Fact Researcher")
         
-        for component in components:
-            st.subheader(component)
-            
+        enable_fact_researcher = st.checkbox("Enable Fact Researcher", value=True)
+        
+        if enable_fact_researcher:
             col1, col2 = st.columns(2)
             
             with col1:
-                st.checkbox(f"Enable {component}", value=True, key=f"enable_{component}")
-                
-                if component == "Fact Researcher":
-                    st.slider("Fact quality threshold", min_value=1, max_value=10, value=7, key=f"quality_{component}")
-                elif component == "Script Generator":
-                    st.slider("Creativity level", min_value=1, max_value=10, value=8, key=f"creativity_{component}")
-                elif component == "Media Selector":
-                    st.slider("Visual quality threshold", min_value=1, max_value=10, value=8, key=f"quality_{component}")
-                elif component == "Voiceover Generator":
-                    st.slider("Voice naturalness", min_value=1, max_value=10, value=9, key=f"naturalness_{component}")
-                elif component == "Video Assembler":
-                    st.slider("Production quality", min_value=1, max_value=10, value=8, key=f"quality_{component}")
-                elif component == "YouTube Publisher":
-                    st.slider("SEO optimization level", min_value=1, max_value=10, value=9, key=f"optimization_{component}")
-                elif component == "Analytics Optimizer":
-                    st.slider("Optimization aggressiveness", min_value=1, max_value=10, value=7, key=f"aggressiveness_{component}")
+                st.write("Fact quality threshold")
+                fact_quality = st.slider("Fact quality threshold", 1, 10, 7, label_visibility="collapsed")
             
             with col2:
-                st.selectbox(f"{component} mode", ["Automatic", "Semi-automatic", "Manual"], key=f"mode_{component}")
-                
-                if component == "Fact Researcher":
-                    st.number_input("Facts per batch", min_value=5, max_value=100, value=20, key=f"batch_{component}")
-                elif component == "Script Generator":
-                    st.number_input("Maximum script length (words)", min_value=50, max_value=500, value=200, key=f"length_{component}")
-                elif component == "Media Selector":
-                    st.number_input("Images per video", min_value=3, max_value=30, value=10, key=f"images_{component}")
-                elif component == "Voiceover Generator":
-                    st.number_input("Speaking rate (words per minute)", min_value=100, max_value=200, value=150, key=f"rate_{component}")
-                elif component == "Video Assembler":
-                    st.number_input("Transition duration (seconds)", min_value=0.5, max_value=3.0, value=1.0, step=0.1, key=f"transition_{component}")
-                elif component == "YouTube Publisher":
-                    st.number_input("Maximum tags per video", min_value=5, max_value=30, value=15, key=f"tags_{component}")
-                elif component == "Analytics Optimizer":
-                    st.number_input("Analysis frequency (days)", min_value=1, max_value=30, value=7, key=f"frequency_{component}")
+                st.write("Fact Researcher mode")
+                fact_mode = st.selectbox(
+                    "Fact Researcher mode",
+                    ["Automatic", "Semi-automatic", "Manual review"],
+                    label_visibility="collapsed"
+                )
+            
+            st.write("Facts per batch")
+            facts_per_batch = st.number_input("Facts per batch", 1, 50, 20, label_visibility="collapsed")
         
+        # Script Generator
+        st.subheader("Script Generator")
+        
+        enable_script_generator = st.checkbox("Enable Script Generator", value=True)
+        
+        if enable_script_generator:
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.write("Creativity level")
+                creativity = st.slider("Creativity level", 1, 10, 8, label_visibility="collapsed")
+            
+            with col2:
+                st.write("Script Generator mode")
+                script_mode = st.selectbox(
+                    "Script Generator mode",
+                    ["Automatic", "Semi-automatic", "Manual review"],
+                    label_visibility="collapsed"
+                )
+            
+            st.write("Maximum script length (words)")
+            max_script_length = st.number_input("Maximum script length (words)", 50, 500, 200, label_visibility="collapsed")
+        
+        # Media Selector
+        st.subheader("Media Selector")
+        
+        enable_media_selector = st.checkbox("Enable Media Selector", value=True)
+        
+        if enable_media_selector:
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.write("Image quality")
+                image_quality = st.slider("Image quality", 1, 10, 8, label_visibility="collapsed")
+            
+            with col2:
+                st.write("Media source")
+                media_source = st.selectbox(
+                    "Media source",
+                    ["Royalty-free stock", "AI-generated", "Mixed sources"],
+                    label_visibility="collapsed"
+                )
+        
+        # YouTube API Configuration
+        st.subheader("YouTube API Configuration")
+        st.write("Configure your YouTube API credentials to enable automatic publishing.")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            client_id = st.text_input("Client ID", type="password", help="Enter your Google API Client ID")
+            
+        with col2:
+            client_secret = st.text_input("Client Secret", type="password", help="Enter your Google API Client Secret")
+        
+        # Add authentication button
+        if st.button("Save and Authenticate"):
+            if client_id and client_secret:
+                # Save credentials to session state
+                st.session_state.youtube_client_id = client_id
+                st.session_state.youtube_client_secret = client_secret
+                
+                # Show success message
+                st.success("YouTube API credentials saved successfully!")
+                
+                # In a real implementation, you would initiate OAuth flow here
+                st.info("To complete authentication, you would be redirected to Google's consent screen. This feature will be implemented in the next update.")
+            else:
+                st.error("Please enter both Client ID and Client Secret.")
+        
+        # Display current connection status
+        st.subheader("Connection Status")
+        if 'youtube_client_id' in st.session_state and 'youtube_client_secret' in st.session_state:
+            st.write("✅ YouTube API credentials are configured")
+        else:
+            st.write("❌ YouTube API credentials not configured")
+        
+        # Save button
         if st.button("Save Component Settings"):
             st.success("Component settings saved successfully!")
     
-    # Maintenance settings
-    with tabs[2]:
+    # Maintenance tab
+    with settings_tab[2]:
         st.header("System Maintenance")
         st.write("Manage system resources and perform maintenance tasks.")
         
@@ -830,182 +624,96 @@ else:
         with col1:
             if st.button("Clear Cache"):
                 st.success("Cache cleared successfully!")
-            
+        
+        with col2:
+            if st.button("Check for Updates"):
+                st.info("Your system is up to date.")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
             if st.button("Restart Components"):
                 st.success("Components restarted successfully!")
         
         with col2:
-            if st.button("Check for Updates"):
-                st.info("System is up to date!")
-            
             if st.button("View Logs"):
-                st.code("2023-04-15 10:23:45 INFO: System started\n2023-04-15 10:24:12 INFO: Content generation initiated\n2023-04-15 10:25:30 INFO: Generated 10 facts\n2023-04-15 10:26:45 INFO: Video assembly complete")
+                st.info("Logs will be displayed here in a future update.")
         
+        # Storage Management
         st.subheader("Storage Management")
         
         # Sample storage data
-        storage_data = {
-            "Facts Database": {"used": 12.5, "total": 100},
-            "Media Library": {"used": 256.8, "total": 1000},
-            "Generated Videos": {"used": 1458.3, "total": 5000}
-        }
+        storage_data = [
+            {"type": "Facts Database", "used": 12.5},
+            {"type": "Media Files", "used": 256.8},
+            {"type": "Generated Videos", "used": 1458.3}
+        ]
         
-        for category, data in storage_data.items():
-            col1, col2, col3 = st.columns([3, 1, 1])
-            
-            with col1:
-                st.progress(data["used"] / data["total"])
-            
-            with col2:
-                st.write(f"{data['used']} MB used")
-            
-            with col3:
-                st.write(f"{data['total']} MB total")
+        for item in storage_data:
+            st.progress(min(item["used"] / 2000, 1.0))
+            st.write(f"{item['used']} MB used")
         
         if st.button("Clean Up Storage"):
             st.success("Storage cleaned up successfully!")
 
 # Help page
-elif page == "Help":
+elif navigation == "Help":
     st.title("Help & Documentation")
     
-    st.write("Welcome to the YouTube Content Automation help page. Here you'll find guides and documentation to help you use the system effectively.")
-    
-    # Tabs for different help sections
-    tabs = st.tabs(["Getting Started", "Tutorials", "FAQ", "Troubleshooting", "Contact Support"])
-    
-    # Getting Started
-    with tabs[0]:
-        st.header("Getting Started")
-        st.write("Learn the basics of using the YouTube Content Automation system.")
-        
-        st.subheader("System Overview")
-        st.write("""
-        The YouTube Content Automation system helps you create, publish, and monetize "Did You Know" style videos with minimal intervention. The system consists of several components:
-        
-        1. **Content Generation** - Researches interesting facts and generates scripts
-        2. **Video Creation** - Creates videos with voiceovers and visuals
-        3. **Publishing** - Uploads videos to YouTube with optimized metadata
-        4. **Analytics** - Tracks performance and optimizes your strategy
-        """)
-        
-        st.subheader("First Steps")
-        st.write("""
-        To get started with the system:
-        
-        1. Configure your YouTube API credentials in the Settings page
-        2. Generate your first batch of facts in the Content Generation page
-        3. Create videos in the Video Creation page
-        4. Publish your videos in the Publishing page
-        5. Monitor performance in the Analytics page
-        """)
-    
-    # Tutorials
-    with tabs[1]:
-        st.header("Tutorials")
-        st.write("Step-by-step guides for using the system.")
-        
-        tutorials = [
-            "Setting Up YouTube API Credentials",
-            "Generating High-Quality Facts",
-            "Creating Engaging Scripts",
-            "Selecting the Best Media",
-            "Optimizing Video Settings",
-            "Publishing Strategies for Maximum Reach",
-            "Understanding Analytics and Optimization"
-        ]
-        
-        for tutorial in tutorials:
-            st.subheader(tutorial)
-            st.write("Click to expand tutorial...")
-            st.write("Tutorial content would appear here.")
+    st.write("Learn how to use the YouTube Content Automation system.")
     
     # FAQ
-    with tabs[2]:
-        st.header("Frequently Asked Questions")
-        
-        faqs = [
-            {
-                "question": "How many videos can I create per month?",
-                "answer": "The system can generate as many videos as you need. However, we recommend starting with 2-3 videos per week to build your channel consistently without overwhelming yourself."
-            },
-            {
-                "question": "Do I need to appear on camera?",
-                "answer": "No, the system is designed to create faceless videos using stock footage, images, and AI-generated voiceovers."
-            },
-            {
-                "question": "How long does it take to monetize my channel?",
-                "answer": "To join the YouTube Partner Program, you need 1,000 subscribers and 4,000 watch hours in the past 12 months. With consistent content, this typically takes 6-12 months."
-            },
-            {
-                "question": "Can I customize the voice used in videos?",
-                "answer": "Yes, you can select from various voice options including gender, accent, and speaking style in the Video Creation page."
-            },
-            {
-                "question": "Is the content copyright-free?",
-                "answer": "The system uses a combination of public domain information and properly cited facts. All media is sourced from royalty-free libraries to avoid copyright issues."
-            }
-        ]
-        
-        for faq in faqs:
-            st.subheader(faq["question"])
-            st.write(faq["answer"])
+    st.subheader("Frequently Asked Questions")
     
-    # Troubleshooting
-    with tabs[3]:
-        st.header("Troubleshooting")
-        st.write("Solutions for common issues.")
+    with st.expander("How does the content generation work?"):
+        st.write("""
+        The content generation system uses AI to research and generate interesting "Did You Know" facts.
         
-        issues = [
-            {
-                "problem": "Content generation is not working",
-                "solution": "Check your internet connection and ensure the Fact Researcher component is enabled in Settings. Try adjusting the fact quality threshold to a lower value."
-            },
-            {
-                "problem": "Videos are not being created",
-                "solution": "Ensure you have generated facts first. Check that the Media Selector and Video Assembler components are enabled. Try using different media sources."
-            },
-            {
-                "problem": "Cannot publish to YouTube",
-                "solution": "Verify your YouTube API credentials in the Settings page. Ensure your channel is properly set up and that you have granted the necessary permissions."
-            },
-            {
-                "problem": "Analytics data is not showing",
-                "solution": "YouTube typically takes 24-48 hours to process analytics data. If the problem persists, check your API permissions and ensure the Analytics Optimizer component is enabled."
-            }
-        ]
+        1. Select the categories you're interested in
+        2. Choose how many facts you want to generate
+        3. Click "Generate Facts"
+        4. The system will create unique, engaging facts for your videos
+        """)
+    
+    with st.expander("How do I publish videos to YouTube?"):
+        st.write("""
+        To publish videos to YouTube:
         
-        for issue in issues:
-            st.subheader(issue["problem"])
-            st.write(issue["solution"])
+        1. Configure your YouTube API credentials in Settings > Components > YouTube API Configuration
+        2. Create videos in the Video Creation page
+        3. Go to the Publishing page
+        4. Select the videos you want to publish
+        5. Choose your privacy settings
+        6. Click "Publish Selected Videos"
+        """)
+    
+    with st.expander("What are the system requirements?"):
+        st.write("""
+        The YouTube Content Automation system is cloud-based and runs entirely in your web browser.
+        
+        You'll need:
+        - A modern web browser (Chrome, Firefox, Safari, Edge)
+        - A YouTube channel
+        - Google API credentials (for publishing to YouTube)
+        """)
     
     # Contact Support
-    with tabs[4]:
-        st.header("Contact Support")
-        st.write("Need help? Contact our support team.")
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            name = st.text_input("Your Name")
-            email = st.text_input("Your Email")
-        
-        with col2:
-            issue_type = st.selectbox(
-                "Issue Type",
-                ["Technical Problem", "Feature Request", "Billing Question", "General Inquiry"]
-            )
-            
-            priority = st.select_slider(
-                "Priority",
-                options=["Low", "Medium", "High"],
-                value="Medium"
-            )
-        
-        message = st.text_area("Message", height=150)
-        
-        if st.button("Submit"):
-            if name and email and message:
-                st.success("Support request submitted successfully! We'll get back to you within 24 hours.")
-            else:
-                st.error("Please fill in all required fields.")
+    st.subheader("Contact Support")
+    
+    st.write("If you need assistance, please contact our support team.")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        name = st.text_input("Your Name")
+    
+    with col2:
+        email = st.text_input("Your Email")
+    
+    message = st.text_area("Message", height=150)
+    
+    if st.button("Send Message"):
+        if name and email and message:
+            st.success("Message sent! Our support team will get back to you soon.")
+        else:
+            st.error("Please fill in all fields.")
