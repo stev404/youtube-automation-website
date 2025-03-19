@@ -718,7 +718,42 @@ elif page == "Settings":
         
         if st.button("Save Workflow Settings"):
             st.success("Workflow settings saved successfully!")
+    # Add this in the Components tab section of your Settings page
+st.header("YouTube API Configuration")
+st.write("Configure your YouTube API credentials to enable automatic publishing.")
+
+# Create two columns for a cleaner layout
+col1, col2 = st.columns(2)
+
+with col1:
+    # YouTube API credentials
+    client_id = st.text_input("Client ID", type="password", help="Enter your Google API Client ID")
     
+with col2:
+    client_secret = st.text_input("Client Secret", type="password", help="Enter your Google API Client Secret")
+
+# Add authentication button
+if st.button("Save and Authenticate"):
+    if client_id and client_secret:
+        # Save credentials to session state or database
+        st.session_state.youtube_client_id = client_id
+        st.session_state.youtube_client_secret = client_secret
+        
+        # Show success message
+        st.success("YouTube API credentials saved successfully!")
+        
+        # In a real implementation, you would initiate OAuth flow here
+        st.info("To complete authentication, you would be redirected to Google's consent screen. This feature will be implemented in the next update.")
+    else:
+        st.error("Please enter both Client ID and Client Secret.")
+
+# Display current connection status
+st.subheader("Connection Status")
+if 'youtube_client_id' in st.session_state and 'youtube_client_secret' in st.session_state:
+    st.write("✅ YouTube API credentials are configured")
+else:
+    st.write("❌ YouTube API credentials not configured")
+
     # Component settings
     with tabs[1]:
         st.header("Component Settings")
