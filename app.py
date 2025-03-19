@@ -365,7 +365,8 @@ elif page == "Video Creation":
                 "Voice accent",
                 ["American", "British", "Australian", "Indian", "German", "French"]
             )
-        
+        if st.button("Save Voice Settings"):
+            st.success("Voice settings saved successfully!")
         if st.button("Assemble Video"):
             with st.spinner("Assembling video..."):
                 # Simulate API call delay
