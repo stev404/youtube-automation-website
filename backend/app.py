@@ -26,6 +26,27 @@ SAMPLE_FACTS = [
     "The first computer bug was an actual real-life bug - a moth was found in the Harvard Mark II computer in 1947.",
     "The average smartphone user touches their phone 2,617 times a day."
 ]
+# Add this function to your API integration code
+def publish_to_youtube(video_id, youtube_credentials):
+    """
+    Publish a video to YouTube using the provided credentials
+    """
+    client_id = youtube_credentials.get("client_id")
+    client_secret = youtube_credentials.get("client_secret")
+    
+    if not client_id or not client_secret:
+        return {"error": "YouTube API credentials not configured"}
+    
+    # In a real implementation, you would use these credentials to authenticate with YouTube API
+    # and upload the video
+    
+    # For now, just call your existing publish endpoint
+    response = requests.post(
+        f"{BACKEND_URL}/api/publish",
+        json={"video_ids": [video_id]}
+    )
+    
+    return response.json()
 
 # Initialize with sample data
 for fact in SAMPLE_FACTS:
