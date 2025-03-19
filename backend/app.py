@@ -281,6 +281,22 @@ def get_analytics():
         ]
     })
 
+@app.route('/', methods=['GET'])
+def home():
+    return jsonify({
+        "message": "YouTube Content Automation API is running",
+        "version": "1.0.0",
+        "endpoints": {
+            "health": "/api/health",
+            "facts": "/api/facts",
+            "scripts": "/api/scripts",
+            "videos": "/api/videos",
+            "publish": "/api/publish",
+            "analytics": "/api/analytics"
+        }
+    })
+
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
