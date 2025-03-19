@@ -14,18 +14,19 @@ st.set_page_config(
 # OAuth callback handler
 def handle_oauth_callback():
     # Get the authorization code from URL parameters
-    code = st.experimental_get_query_params().get("code", [""])[0]
+    code = st.query_params.get("code", [""])[0] if "code" in st.query_params else ""
     
     if code:
         # In a real implementation, you would exchange this code for tokens
         st.success("Authentication successful! You can now publish videos to YouTube.")
         
         # Clear the URL parameters
-        st.experimental_set_query_params()
+        st.query_params.clear()
     
 # Check if this is an OAuth callback
-if "code" in st.experimental_get_query_params():
+if "code" in st.query_params:
     handle_oauth_callback()
+
 
 # Initialize session state variables if they don't exist
 if 'facts_generated' not in st.session_state:
