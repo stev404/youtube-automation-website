@@ -11,23 +11,6 @@ st.set_page_config(
     layout="wide"
 )
 
-# OAuth callback handler
-def handle_oauth_callback():
-    # Get the authorization code from URL parameters
-    code = st.query_params.get("code", [""])[0] if "code" in st.query_params else ""
-    
-    if code:
-        # In a real implementation, you would exchange this code for tokens
-        st.success("Authentication successful! You can now publish videos to YouTube.")
-        
-        # Clear the URL parameters
-        st.query_params.clear()
-    
-# Check if this is an OAuth callback
-if "code" in st.query_params:
-    handle_oauth_callback()
-
-
 # Initialize session state variables if they don't exist
 if 'facts_generated' not in st.session_state:
     st.session_state.facts_generated = 0
@@ -206,6 +189,9 @@ elif page == "Content Generation":
         with col3:
             sources[i]["enabled"] = st.checkbox("Enable", value=source["enabled"], key=f"source_{i}")
 
+    if st.button("Save Fact Sources"):
+        st.success("Fact sources saved successfully!")
+
 # Video Creation page
 elif page == "Video Creation":
     st.title("Video Creation")
@@ -324,6 +310,9 @@ elif page == "Video Creation":
                 st.write("**Selected Audio:** Underwater Ambience - YouTube Audio Library")
                 
                 st.success("Media selected successfully!")
+
+        if st.button("Save Media Settings"):
+            st.success("Media settings saved successfully!")
     
     # Video Assembly tab
     with tabs[2]:
@@ -786,44 +775,7 @@ elif page == "Settings":
         
         if st.button("Save Component Settings"):
             st.success("Component settings saved successfully!")
-            # YouTube API Configuration
-        st.subheader("YouTube API Configuration")
-        st.write("Configure your YouTube API credentials to enable automatic publishing.")
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            client_id = st.text_input("Client ID", type="password", help="Enter your Google API Client ID")
-            
-        with col2:
-            client_secret = st.text_input("Client Secret", type="password", help="Enter your Google API Client Secret")
-        
-        # Add authentication button
-        if st.button("Save and Authenticate"):
-            if client_id and client_secret:
-                # Save credentials to session state
-                st.session_state.youtube_client_id = client_id
-                st.session_state.youtube_client_secret = client_secret
-                
-                # Show success message
-                st.success("YouTube API credentials saved successfully!")
-                
-                # In a real implementation, you would initiate OAuth flow here
-                st.info("To complete authentication, you would be redirected to Google's consent screen. This feature will be implemented in the next update.")
-            else:
-                st.error("Please enter both Client ID and Client Secret.")
-        
-        # Display current connection status
-        st.subheader("Connection Status")
-        if 'youtube_client_id' in st.session_state and 'youtube_client_secret' in st.session_state:
-            st.write("✅ YouTube API credentials are configured")
-        else:
-            st.write("❌ YouTube API credentials not configured")
-        
-        # Save button
-        if st.button("Save Component Settings"):
-            st.success("Component settings saved successfully!")
-            
+    
     # Maintenance settings
     with tabs[2]:
         st.header("System Maintenance")
