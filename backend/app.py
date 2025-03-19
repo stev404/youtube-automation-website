@@ -36,6 +36,22 @@ for fact in SAMPLE_FACTS:
         "category": random.choice(["Science", "History", "Nature", "Technology"])
     })
 
+@app.route('/', methods=['GET'])
+def home():
+    return jsonify({
+        "message": "YouTube Content Automation API is running",
+        "version": "1.0.0",
+        "endpoints": {
+            "health": "/api/health",
+            "facts": "/api/facts",
+            "scripts": "/api/scripts",
+            "videos": "/api/videos",
+            "publish": "/api/publish",
+            "analytics": "/api/analytics"
+        }
+    })
+
+
 @app.route('/api/health', methods=['GET'])
 def health_check():
     return jsonify({"status": "healthy", "timestamp": datetime.now().isoformat()})
