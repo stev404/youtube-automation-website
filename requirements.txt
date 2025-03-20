@@ -3,3 +3,8 @@ requests==2.31.0
 python-dotenv==1.0.0
 pandas
 numpy
+google-auth
+google-auth-oauthlib
+google-auth-httplib2
+google-api-python-client
+
