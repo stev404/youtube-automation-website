@@ -32,21 +32,22 @@ class YouTubeAPI:
         self.credentials = None
         self.youtube = None
         
-    def create_client_config(self):
-        """Create client configuration from provided credentials"""
-        if not self.client_id or not self.client_secret:
-            raise ValueError("Client ID and Client Secret are required")
-            
-        client_config = {
-            "installed": {
-                "client_id": self.client_id,
-                "client_secret": self.client_secret,
-                "redirect_uris": [self.redirect_uri or "https://youtube-automation-backwnd-4.onrender.com/oauth2callback"],
-                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                "token_uri": "https://oauth2.googleapis.com/token"
-            }
+def create_client_config(self):
+    """Create client configuration from provided credentials"""
+    if not self.client_id or not self.client_secret:
+        raise ValueError("Client ID and Client Secret are required")
+        
+    client_config = {
+        "installed": {
+            "client_id": self.client_id,
+            "client_secret": self.client_secret,
+            "redirect_uris": [self.redirect_uri or "https://youtube-automation-backwnd-4.onrender.com/oauth2callback"],
+            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+            "token_uri": "https://oauth2.googleapis.com/token"
         }
-        return client_config
+    }
+    return client_config
+
         
     def authenticate(self, token_path='token.pickle') :
     """Authenticate with YouTube API using OAuth2"""
