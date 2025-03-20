@@ -231,6 +231,11 @@ elif page == "Content Generation":
 elif page == "Video Creation":
     st.title("Video Creation")
     
+    # Initialize content generation components
+    fact_generator = FactGenerator()
+    script_generator = ScriptGenerator()
+    video_assembler = VideoAssembler()
+    
     # Check if facts are available
     if st.session_state.facts_generated == 0:
         st.warning("Please generate facts first in the Content Generation page.")
