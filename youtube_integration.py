@@ -41,43 +41,56 @@ class YouTubeAPI:
             "installed": {
                 "client_id": self.client_id,
                 "client_secret": self.client_secret,
-                "redirect_uris": [self.redirect_uri or "http://localhost:8501/oauth2callback"],
+                "redirect_uris": [self.redirect_uri or "https://youtube-automation-backwnd-4.onrender.com/oauth2callback"],
                 "auth_uri": "https://accounts.google.com/o/oauth2/auth",
                 "token_uri": "https://oauth2.googleapis.com/token"
             }
         }
         return client_config
         
-    def authenticate(self, token_path='token.pickle'):
-        """Authenticate with YouTube API using OAuth2"""
-        credentials = None
-        
-        # Check if token file exists
-        if os.path.exists(token_path):
-            with open(token_path, 'rb') as token:
-                credentials = pickle.load(token)
+    def authenticate(self, token_path='token.pickle') :
+    """Authenticate with YouTube API using OAuth2"""
+    credentials = None
+    
+    # Check if token file exists
+    if os.path.exists(token_path):
+        with open(token_path, 'rb') as token:
+            credentials = pickle.load(token)
+            
+    # If credentials are invalid or don't exist, get new ones
+    if not credentials or not credentials.valid:
+        if credentials and credentials.expired and credentials.refresh_token:
+            credentials.refresh(Request())
+        else:
+            client_config = self.create_client_config()
+            flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_config(
+                client_config, SCOPES)
                 
-        # If credentials are invalid or don't exist, get new ones
-        if not credentials or not credentials.valid:
-            if credentials and credentials.expired and credentials.refresh_token:
-                credentials.refresh(Request())
-            else:
-                client_config = self.create_client_config()
-                flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_config(
-                    client_config, SCOPES)
-                credentials = flow.run_local_server(port=8501)
+            # Instead of run_local_server, use a different approach for web apps
+            # This will require implementing a route in your app to handle the OAuth callback
+            auth_url, _ = flow.authorization_url(
+                access_type='offline',
+                include_granted_scopes='true'
+            )
+            
+            # In a web app, you would redirect to auth_url and handle the callback
+            # For now, we'll just print the URL and ask the user to manually authorize
+            print(f"Please go to this URL and authorize the app: {auth_url}")
+            auth_code = input("Enter the authorization code: ")
+            flow.fetch_token(code=auth_code)
+            credentials = flow.credentials
                 
             # Save the credentials for the next run
             with open(token_path, 'wb') as token:
                 pickle.dump(credentials, token)
                 
-        self.credentials = credentials
+    self.credentials = credentials
+    
+    # Build the YouTube API client
+    self.youtube = googleapiclient.discovery.build(
+        'youtube', 'v3', credentials=credentials)
         
-        # Build the YouTube API client
-        self.youtube = googleapiclient.discovery.build(
-            'youtube', 'v3', credentials=credentials)
-            
-        return self.youtube
+    return self.youtube
         
     def get_channel_info(self):
         """Get information about the authenticated user's channel"""
