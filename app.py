@@ -231,8 +231,189 @@ elif page == "Content Generation":
 elif page == "Video Creation":
     st.title("Video Creation")
     
-    # Rest of the Video Creation page code...
-    # This would remain largely the same as in the original script
+    # Check if facts are available
+    if st.session_state.facts_generated == 0:
+        st.warning("Please generate facts first in the Content Generation page.")
+    else:
+        # Tabs for different aspects of video creation
+        tabs = st.tabs(["Create Scripts", "Assemble Videos", "Preview"])
+        
+        # Create Scripts tab
+        with tabs[0]:
+            st.header("Create Scripts")
+            st.write("Convert your generated facts into engaging video scripts.")
+            
+            # Get available facts (in a real implementation, these would be stored in session state or database)
+            # This is a placeholder - you would replace this with your actual facts from the Content Generation page
+            sample_facts = []
+            for category in ["Science", "History", "Nature", "Space", "Technology"]:
+                if category in st.session_state.get('selected_categories', ["Science", "History", "Nature"]):
+                    for fact in fact_generator.get_sample_facts([category], 3):
+                        sample_facts.append(fact)
+            
+            # Script settings
+            st.subheader("Script Settings")
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                video_title = st.text_input("Video Title", "Amazing Facts You Didn't Know")
+                include_sources = st.checkbox("Include Sources", value=False)
+            
+            with col2:
+                num_facts_per_video = st.slider("Facts per Video", min_value=3, max_value=10, value=5)
+                
+            # Create script button
+            if st.button("Create Scripts"):
+                if len(sample_facts) >= num_facts_per_video:
+                    with st.spinner("Creating engaging scripts..."):
+                        # Initialize script generator
+                        script_generator = ScriptGenerator()
+                        
+                        # Select facts for this video
+                        selected_facts = sample_facts[:num_facts_per_video]
+                        
+                        # Create script
+                        script_data = script_generator.create_script_with_sections(
+                            facts=selected_facts,
+                            title=video_title,
+                            include_sources=include_sources
+                        )
+                        
+                        # Store in session state
+                        if 'scripts' not in st.session_state:
+                            st.session_state.scripts = []
+                        
+                        st.session_state.scripts.append(script_data)
+                        st.session_state.scripts_created += 1
+                        
+                        st.success(f"Script created successfully! Estimated video duration: {script_data['estimated_duration']} seconds")
+                        
+                        # Display script preview
+                        with st.expander("Script Preview", expanded=True):
+                            st.write(script_data["full_script"])
+                else:
+                    st.error(f"Not enough facts available. Please generate at least {num_facts_per_video} facts.")
+            
+            # Display existing scripts
+            if 'scripts' in st.session_state and st.session_state.scripts:
+                st.subheader("Your Scripts")
+                for i, script in enumerate(st.session_state.scripts):
+                    with st.expander(f"Script {i+1}: {script['title']}"):
+                        st.write(f"Duration: {script['estimated_duration']} seconds")
+                        st.write(f"Facts: {script['fact_count']}")
+                        st.write(script["full_script"])
+        
+        # Assemble Videos tab
+        with tabs[1]:
+            st.header("Assemble Videos")
+            st.write("Create videos from your scripts with customizable settings.")
+            
+            if 'scripts' not in st.session_state or not st.session_state.scripts:
+                st.warning("Please create scripts first in the Create Scripts tab.")
+            else:
+                # Video settings
+                st.subheader("Video Settings")
+                
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    selected_script_index = st.selectbox(
+                        "Select Script", 
+                        range(len(st.session_state.scripts)), 
+                        format_func=lambda i: f"Script {i+1}: {st.session_state.scripts[i]['title']}"
+                    )
+                    
+                    visual_style = st.selectbox(
+                        "Visual Style",
+                        ["standard", "minimal", "vibrant"],
+                        format_func=lambda x: x.capitalize()
+                    )
+                
+                with col2:
+                    text_to_speech = st.checkbox("Enable Text-to-Speech", value=True)
+                    use_background_music = st.checkbox("Add Background Music", value=True)
+                
+                # Create video button
+                if st.button("Create Video"):
+                    with st.spinner("Assembling your video..."):
+                        # Get selected script
+                        script_data = st.session_state.scripts[selected_script_index]
+                        
+                        # Initialize video assembler
+                        video_assembler = VideoAssembler()
+                        
+                        # Create temporary directory for output if it doesn't exist
+                        output_dir = "output"
+                        os.makedirs(output_dir, exist_ok=True)
+                        
+                        # Generate output filename
+                        output_filename = f"video_{len(st.session_state.get('videos', []))}.mp4"
+                        output_path = os.path.join(output_dir, output_filename)
+                        
+                        # Create video
+                        video_path = video_assembler.create_video(
+                            script_data=script_data,
+                            output_path=output_path,
+                            text_to_speech=text_to_speech,
+                            visual_style=visual_style
+                        )
+                        
+                        # Store in session state
+                        if 'videos' not in st.session_state:
+                            st.session_state.videos = []
+                        
+                        video_info = {
+                            "path": video_path,
+                            "title": script_data["title"],
+                            "duration": script_data["estimated_duration"],
+                            "script_index": selected_script_index
+                        }
+                        
+                        st.session_state.videos.append(video_info)
+                        st.session_state.videos_assembled += 1
+                        
+                        st.success(f"Video created successfully at {video_path}")
+                
+                # Display existing videos
+                if 'videos' in st.session_state and st.session_state.videos:
+                    st.subheader("Your Videos")
+                    for i, video in enumerate(st.session_state.videos):
+                        with st.expander(f"Video {i+1}: {video['title']}"):
+                            st.write(f"Duration: {video['duration']} seconds")
+                            st.write(f"Path: {video['path']}")
+                            
+                            # In a real implementation, you would add video preview here
+                            st.info("Video preview would be displayed here in the full implementation.")
+        
+        # Preview tab
+        with tabs[2]:
+            st.header("Preview")
+            st.write("Preview your videos before publishing.")
+            
+            if 'videos' not in st.session_state or not st.session_state.videos:
+                st.warning("Please create videos first in the Assemble Videos tab.")
+            else:
+                # Select video to preview
+                selected_video_index = st.selectbox(
+                    "Select Video", 
+                    range(len(st.session_state.videos)), 
+                    format_func=lambda i: f"Video {i+1}: {st.session_state.videos[i]['title']}"
+                )
+                
+                # Display video info
+                video = st.session_state.videos[selected_video_index]
+                st.subheader(video['title'])
+                st.write(f"Duration: {video['duration']} seconds")
+                
+                # In a real implementation, you would embed the video player here
+                st.info("Video player would be embedded here in the full implementation.")
+                
+                # Display associated script
+                script_data = st.session_state.scripts[video['script_index']]
+                with st.expander("View Script"):
+                    st.write(script_data["full_script"])
+
 
 # Publishing page
 elif page == "Publishing":
