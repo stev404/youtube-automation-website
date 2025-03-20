@@ -86,16 +86,20 @@ class VideoAssembler:
         
         return output_path
     
-    def _generate_speech(self, text: str, output_path: str) -> None:
-        """Generate speech from text using pyttsx3"""
-        try:
-            engine = pyttsx3.init()
-            engine.setProperty('rate', 150)  # Speed of speech
-            engine.setProperty('volume', 0.9)  # Volume (0.0 to 1.0)
-            
-            # Save to file
-            engine.save_to_file(text, output_path)
-            engine.runAndWait()
-        except Exception as e:
-            print(f"Error generating speech: {str(e)}")
-            # If speech generation fails, we'll just have a silent video for this part
+def _generate_speech(self, text: str, output_path: str) -> None:
+    """Generate speech from text using pyttsx3"""
+    if pyttsx3 is None:
+        print("pyttsx3 not installed. Text-to-speech functionality is disabled.")
+        return
+        
+    try:
+        engine = pyttsx3.init()
+        engine.setProperty('rate', 150)  # Speed of speech
+        engine.setProperty('volume', 0.9)  # Volume (0.0 to 1.0)
+        
+        # Save to file
+        engine.save_to_file(text, output_path)
+        engine.runAndWait()
+    except Exception as e:
+        print(f"Error generating speech: {str(e)}")
+
