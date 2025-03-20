@@ -3,8 +3,18 @@ import random
 import tempfile
 from typing import List, Dict, Any, Optional, Tuple
 from pathlib import Path
-import pyttsx3
-import numpy as np
+
+# Try to import optional dependencies
+try:
+    import pyttsx3
+except ImportError:
+    pyttsx3 = None
+
+try:
+    import numpy as np
+except ImportError:
+    np = None
+
 
 class VideoAssembler:
     """Assembles videos from scripts and media assets"""
