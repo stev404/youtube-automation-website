@@ -32,66 +32,82 @@ class YouTubeAPI:
         self.credentials = None
         self.youtube = None
         
-def create_client_config(self):
-    """Create client configuration from provided credentials"""
-    if not self.client_id or not self.client_secret:
-        raise ValueError("Client ID and Client Secret are required")
-        
-    client_config = {
-        "installed": {
-            "client_id": self.client_id,
-            "client_secret": self.client_secret,
-            "redirect_uris": [self.redirect_uri or "https://youtube-automation-backwnd-4.onrender.com/oauth2callback"],
-            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-            "token_uri": "https://oauth2.googleapis.com/token"
+    def create_client_config(self):
+        """Create client configuration from provided credentials"""
+        if not self.client_id or not self.client_secret:
+            raise ValueError("Client ID and Client Secret are required")
+            
+        client_config = {
+            "installed": {
+                "client_id": self.client_id,
+                "client_secret": self.client_secret,
+                "redirect_uris": [self.redirect_uri or "https://youtube-automation-backwnd-4.onrender.com/oauth2callback"],
+                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                "token_uri": "https://oauth2.googleapis.com/token"
+            }
         }
-    }
-    return client_config
-
+        return client_config
         
-    def authenticate(self, token_path='token.pickle') :
-    """Authenticate with YouTube API using OAuth2"""
+    def authenticate(self, session_state=None):
+    """Authenticate with YouTube API using OAuth2 for web applications"""
     credentials = None
     
-    # Check if token file exists
-    if os.path.exists(token_path):
-        with open(token_path, 'rb') as token:
-            credentials = pickle.load(token)
-            
+    # Check if credentials exist in session state
+    if session_state and 'youtube_credentials' in session_state:
+        credentials = session_state.youtube_credentials
+        
     # If credentials are invalid or don't exist, get new ones
     if not credentials or not credentials.valid:
         if credentials and credentials.expired and credentials.refresh_token:
             credentials.refresh(Request())
         else:
+            # Create a flow instance to manage the OAuth 2.0 Authorization Grant Flow
             client_config = self.create_client_config()
-            flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_config(
-                client_config, SCOPES)
-                
-            # Instead of run_local_server, use a different approach for web apps
-            # This will require implementing a route in your app to handle the OAuth callback
+            flow = google_auth_oauthlib.flow.Flow.from_client_config(
+                client_config, SCOPES, redirect_uri=self.redirect_uri)
+            
+            # Generate the authorization URL
             auth_url, _ = flow.authorization_url(
                 access_type='offline',
                 include_granted_scopes='true'
             )
             
-            # In a web app, you would redirect to auth_url and handle the callback
-            # For now, we'll just print the URL and ask the user to manually authorize
-            print(f"Please go to this URL and authorize the app: {auth_url}")
-            auth_code = input("Enter the authorization code: ")
-            flow.fetch_token(code=auth_code)
-            credentials = flow.credentials
+            # Store the state in session for later verification
+            if session_state:
+                session_state.auth_flow = flow
                 
-            # Save the credentials for the next run
-            with open(token_path, 'wb') as token:
-                pickle.dump(credentials, token)
-                
+            # Return the auth URL for redirection
+            return None, auth_url
+    
     self.credentials = credentials
     
     # Build the YouTube API client
     self.youtube = googleapiclient.discovery.build(
         'youtube', 'v3', credentials=credentials)
         
+    return self.youtube, None
+
+def handle_auth_callback(self, code, session_state=None):
+    """Handle the OAuth callback with authorization code"""
+    if not session_state or 'auth_flow' not in session_state:
+        raise ValueError("No authentication flow found in session")
+        
+    flow = session_state.auth_flow
+    
+    # Exchange the authorization code for credentials
+    flow.fetch_token(code=code)
+    credentials = flow.credentials
+    
+    # Save credentials to session state
+    session_state.youtube_credentials = credentials
+    
+    # Build the YouTube API client
+    self.credentials = credentials
+    self.youtube = googleapiclient.discovery.build(
+        'youtube', 'v3', credentials=credentials)
+        
     return self.youtube
+
         
     def get_channel_info(self):
         """Get information about the authenticated user's channel"""
