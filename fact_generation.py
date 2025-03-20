@@ -40,6 +40,7 @@ class FactGenerator:
         Returns:
             List of dictionaries containing generated facts and metadata
         """
+        import openai                 
         if not self.api_key:
             raise ValueError("OpenAI API key is required. Use set_api_key() to set it.")
             
