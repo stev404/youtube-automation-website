@@ -442,7 +442,7 @@ elif page == "Publishing":
             client_secret = st.text_input("Client Secret", type="password")
         
         with col2:
-            redirect_uri = st.text_input("Redirect URI", "http://localhost:8501/oauth2callback") 
+            redirect_uri = st.text_input("Redirect URI", "https://youtube-automation-backwnd-4.onrender.com/oauth2callback") 
             channel_id = st.text_input("Channel ID (optional)")
         
         if st.button("Authenticate"):
