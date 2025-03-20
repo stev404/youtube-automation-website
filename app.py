@@ -5,6 +5,9 @@ import os
 from datetime import datetime
 import time
 from youtube_integration import YouTubeAPI
+from fact_generation import FactGenerator
+from script_creation import ScriptGenerator
+from video_assembly import VideoAssembler
 
 # Page configuration
 st.set_page_config(
