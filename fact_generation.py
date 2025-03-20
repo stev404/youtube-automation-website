@@ -4,7 +4,6 @@ Uses OpenAI API to generate interesting facts for videos
 """
 
 import os
-import openai
 import random
 import json
 from typing import List, Dict, Any, Optional
