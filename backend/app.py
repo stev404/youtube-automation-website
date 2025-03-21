@@ -100,76 +100,6 @@ def create_facts():
     FACTS_DB.append(new_fact)
     return jsonify(new_fact), 201
 
-@app.route('/api/facts/generate', methods=['POST'])
-def generate_facts():
-    data = request.json
-    
-    # Validate request
-    if not data:
-        return jsonify({"error": "Invalid request"}), 400
-    
-    num_facts = data.get('num_facts', 5)
-    categories = data.get('categories', ["Science", "History", "Nature", "Technology"])
-    
-    # Expanded facts database with more variety
-    sample_facts_by_category = {
-        "Science": [
-            # Add at least 15 facts here
-        ],
-        "History": [
-            # Add at least 15 facts here
-        ],
-        "Nature": [
-            # Add at least 15 facts here
-        ],
-        "Technology": [
-            # Add at least 15 facts here
-        ]
-    }
-    
-    # Track used facts to avoid repetition
-    used_facts = set()
-    generated_facts = []
-    
-    # Try to generate the requested number of facts without repetition
-    attempts = 0
-    max_attempts = num_facts * 3  # Limit attempts to avoid infinite loop
-    
-    while len(generated_facts) < num_facts and attempts < max_attempts:
-        attempts += 1
-        category = random.choice(categories)
-        
-        if category in sample_facts_by_category and sample_facts_by_category[category]:
-            # Get available facts (not used yet)
-            available_facts = [f for f in sample_facts_by_category[category] 
-                              if f not in used_facts]
-            
-            # If all facts in this category are used, skip to next iteration
-            if not available_facts:
-                continue
-                
-            # Select a random fact from available ones
-            fact_content = random.choice(available_facts)
-            used_facts.add(fact_content)
-            
-            # Create new fact
-            new_fact = {
-                "id": len(FACTS_DB) + 1,
-                "content": fact_content,
-                "created_at": datetime.now().isoformat(),
-                "category": category
-            }
-            
-            FACTS_DB.append(new_fact)
-            generated_facts.append(new_fact)
-    
-    return jsonify(generated_facts), 201
-
-
-@app.route('/api/scripts', methods=['GET'])
-def get_scripts():
-    return jsonify(SCRIPTS_DB)
-
 @app.route('/api/scripts/generate', methods=['POST'])
 def generate_scripts():
     data = request.json
@@ -182,6 +112,45 @@ def generate_scripts():
     script_format = data.get('format', 'Conversational')
     script_length = data.get('length', '60 seconds')
     
+    # Different intro templates based on format
+    intro_templates = {
+        'Conversational': [
+            # Add at least 4 templates here
+        ],
+        'Educational': [
+            # Add at least 4 templates here
+        ],
+        'Entertaining': [
+            # Add at least 4 templates here
+        ]
+    }
+    
+    # Different main content templates
+    main_content_templates = {
+        'Conversational': [
+            # Add at least 3 templates here
+        ],
+        'Educational': [
+            # Add at least 3 templates here
+        ],
+        'Entertaining': [
+            # Add at least 3 templates here
+        ]
+    }
+    
+    # Different outro templates
+    outro_templates = {
+        'Conversational': [
+            # Add at least 3 templates here
+        ],
+        'Educational': [
+            # Add at least 3 templates here
+        ],
+        'Entertaining': [
+            # Add at least 3 templates here
+        ]
+    }
+    
     generated_scripts = []
     for fact_id in fact_ids:
         # Find the fact
@@ -189,26 +158,31 @@ def generate_scripts():
         if not fact:
             continue
         
-        # Generate script (in a real app, this would use AI)
+        # Select appropriate templates based on format
+        format_key = script_format if script_format in intro_templates else 'Conversational'
+        
+        intro = random.choice(intro_templates[format_key]).format(fact=fact['content'])
+        main = random.choice(main_content_templates[format_key]).format(fact=fact['content'])
+        outro = random.choice(outro_templates[format_key]).format(fact=fact['content'])
+        
+        # Generate script with more variety
         script_content = f"""
 [INTRO]
-Did you know that {fact['content']}
+{intro}
 
 [MAIN CONTENT]
-That's right! This fascinating fact is just one example of the amazing world we live in.
-
-Let's explore this a bit more...
+{main}
 
 {random.choice([
-    "Scientists have been studying this phenomenon for decades.",
-    "This discovery changed our understanding of the subject.",
-    "Many people are surprised when they learn this fact.",
-    "It's one of those things that makes you appreciate the complexity of our world.",
-    "This is just one of many incredible facts about this topic."
+    "This is particularly interesting when you consider the broader context.",
+    "When you think about it, this reveals something profound about our world.",
+    "It's these kinds of discoveries that make learning so rewarding.",
+    "This fact has fascinated people for generations.",
+    "Scientists continue to study this phenomenon to understand it better."
 ])}
 
 [OUTRO]
-Next time you're in a conversation, share this interesting fact and watch people's reactions!
+{outro}
         """
         
         # Create new script
@@ -225,6 +199,7 @@ Next time you're in a conversation, share this interesting fact and watch people
         generated_scripts.append(new_script)
     
     return jsonify(generated_scripts), 201
+
 
 @app.route('/api/videos', methods=['GET'])
 def get_videos():
