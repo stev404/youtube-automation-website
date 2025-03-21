@@ -1,199 +1,184 @@
 """
-Script Creation Module for YouTube Content Automation
-Converts facts into engaging video scripts
+Script Creation Module for YouTube Automation
+Generates video scripts from facts
 """
 
 import random
-from typing import List, Dict, Any, Optional
+from typing import Dict, Any, List, Optional
+from datetime import datetime
 
 class ScriptGenerator:
-    """Generates video scripts from facts"""
+    """
+    Generates video scripts from facts
+    """
     
     def __init__(self):
-        """Initialize the script generator"""
-        # Templates for script components
-        self.intro_templates = [
-            "Welcome to another episode of Amazing Facts! Today, we're going to explore some mind-blowing information that will leave you saying 'Wow!'",
-            "Did you know? In today's video, we'll share some fascinating facts that will make you the most interesting person in any conversation.",
-            "Get ready to be amazed! These incredible facts will change the way you see the world around you.",
-            "Hello curious minds! Today we're diving into some extraordinary facts that most people don't know about.",
-            "Prepare to have your mind blown! These amazing facts will make you question everything you thought you knew."
-        ]
+        """Initialize the ScriptGenerator"""
+        # Different intro templates based on format
+        self.intro_templates = {
+            'Conversational': [
+                "Hey there! Did you know that {fact}? That's pretty amazing, right?",
+                "Welcome back to our channel! Today we're exploring an incredible fact: {fact}",
+                "Here's something that might surprise you... {fact}. Let's dive deeper into this!",
+                "I bet you didn't know that {fact}. It's one of those fascinating tidbits that makes life interesting."
+            ],
+            'Educational': [
+                "Today we're exploring an important fact: {fact}. This has significant implications for how we understand our world.",
+                "In this educational video, we'll examine the following fact: {fact}. Let's analyze what this means.",
+                "Welcome to our learning series! Today's fascinating topic centers around this fact: {fact}",
+                "The following information might change your perspective: {fact}. Let's explore the science behind this."
+            ],
+            'Entertaining': [
+                "You won't believe this, but {fact}! Mind-blowing, right?",
+                "Prepare to have your mind blown! {fact} - and that's just the beginning of today's amazing facts!",
+                "This is going to sound crazy, but {fact}! Let's talk about why this is so incredible!",
+                "Wait until you tell your friends this one... {fact}! Their reactions will be priceless!"
+            ]
+        }
         
-        self.transition_templates = [
-            "But that's not all! Here's another fascinating fact...",
-            "Moving on to our next amazing discovery...",
-            "Wait until you hear this next one...",
-            "If you thought that was interesting, check this out...",
-            "Here's something else that will surprise you...",
-            "Now for another mind-blowing fact...",
-            "Let's continue with another incredible piece of information...",
-            "The next fact is equally amazing...",
-            "You won't believe this next one..."
-        ]
+        # Different main content templates
+        self.main_content_templates = {
+            'Conversational': [
+                "Let's think about what this means. {fact} is fascinating because it shows us how complex our world really is. Many people don't realize the implications of this information.",
+                "When you consider that {fact}, it makes you wonder what other amazing things we still don't know about our world. Scientists continue to study this phenomenon.",
+                "I find it incredible that {fact}. It's these kinds of details that make learning about our world so rewarding. There's always something new to discover."
+            ],
+            'Educational': [
+                "To understand why {fact}, we need to examine the underlying principles. This phenomenon occurs because of specific conditions that create this remarkable outcome.",
+                "The fact that {fact} has been verified through multiple studies. Researchers have documented this through careful observation and experimentation.",
+                "When we analyze {fact} more carefully, we can see how this connects to broader patterns in our world. This is consistent with what we know about related phenomena."
+            ],
+            'Entertaining': [
+                "Can you imagine if {fact} wasn't true? Our world would be completely different! This is the kind of mind-blowing information that makes reality stranger than fiction.",
+                "I was shocked when I first learned that {fact}! It's one of those facts that sounds made up but is absolutely true. The universe is full of surprises!",
+                "The next time you're at a party, try telling people that {fact}. Watch their jaws drop! It's the perfect conversation starter."
+            ]
+        }
         
-        self.conclusion_templates = [
-            "Thanks for watching! If you enjoyed these facts, don't forget to like and subscribe for more amazing content.",
-            "Which fact surprised you the most? Let us know in the comments below, and don't forget to subscribe for more fascinating videos!",
-            "We hope you learned something new today! Hit that subscribe button for more incredible facts every week.",
-            "If you enjoyed this video, give it a thumbs up and share it with a friend who loves learning new things!",
-            "That's all for today's amazing facts! Subscribe for more mind-blowing information in our next video."
-        ]
-        
-    def create_script(self, 
-                     facts: List[Dict[str, Any]], 
-                     title: Optional[str] = None,
-                     include_sources: bool = False,
-                     custom_intro: Optional[str] = None,
-                     custom_conclusion: Optional[str] = None) -> Dict[str, Any]:
+        # Different outro templates
+        self.outro_templates = {
+            'Conversational': [
+                "Thanks for watching! If you enjoyed learning about {fact}, make sure to like and subscribe for more fascinating content.",
+                "I hope you found this information about {fact} as interesting as I did. See you in the next video!",
+                "Now that you know {fact}, be sure to share this video with someone who would appreciate this knowledge!"
+            ],
+            'Educational': [
+                "Understanding that {fact} helps us build a more complete picture of our world. Join us next time for more educational content.",
+                "We hope this explanation of why {fact} has been informative. Don't forget to subscribe for more in-depth explorations.",
+                "Continue your learning journey with us as we explore more fascinating facts like {fact} in our upcoming videos."
+            ],
+            'Entertaining': [
+                "Wasn't that amazing? Now you can amaze your friends by telling them that {fact}! Don't forget to like and subscribe!",
+                "Mind = blown! {fact} is just one of the incredible facts we share on this channel. Stay tuned for more!",
+                "If you enjoyed learning that {fact}, smash that like button and subscribe for more mind-blowing content!"
+            ]
+        }
+    
+    def generate_script(self, 
+                       fact_data: Dict[str, Any],
+                       format_type: str = "Conversational",
+                       target_length: str = "60 seconds",
+                       **kwargs) -> Dict[str, Any]:
         """
-        Create a complete video script from a list of facts
+        Generate a script from a fact
         
         Args:
-            facts: List of fact dictionaries with 'text' and optionally 'source' and 'category'
-            title: Optional custom title for the video
-            include_sources: Whether to include sources in the script
-            custom_intro: Optional custom introduction
-            custom_conclusion: Optional custom conclusion
+            fact_data: Fact data dictionary
+            format_type: Script format (Conversational, Educational, Entertaining)
+            target_length: Target video length
+            **kwargs: Additional script parameters
             
         Returns:
-            Dictionary containing the complete script and metadata
+            Script data dictionary
         """
-        if not facts:
-            raise ValueError("At least one fact is required to create a script")
-            
-        # Generate title if not provided
-        if not title:
-            categories = set(fact.get('category', '') for fact in facts if 'category' in fact)
-            if categories:
-                category_str = " and ".join(list(categories)[:2])
-                title = f"Amazing Facts About {category_str} You Probably Didn't Know"
-            else:
-                title = "Mind-Blowing Facts That Will Amaze You"
-                
-        # Create script sections
-        intro = custom_intro if custom_intro else random.choice(self.intro_templates)
-        conclusion = custom_conclusion if custom_conclusion else random.choice(self.conclusion_templates)
+        # Get fact content
+        fact_content = fact_data.get('content', '')
+        if not fact_content:
+            raise ValueError("Fact content is required")
         
-        # Build the main content with facts and transitions
-        main_content = []
-        for i, fact in enumerate(facts):
-            fact_text = fact['text']
-            
-            # Add source if requested
-            if include_sources and 'source' in fact:
-                fact_text += f" (Source: {fact['source']})"
-                
-            main_content.append(fact_text)
-            
-            # Add transition between facts (except after the last fact)
-            if i < len(facts) - 1:
-                main_content.append(random.choice(self.transition_templates))
-                
-        # Combine all script components
-        full_script = [intro] + main_content + [conclusion]
+        # Validate format type
+        if format_type not in self.intro_templates:
+            format_type = "Conversational"  # Default to conversational
         
-        # Create script metadata
+        # Select templates
+        intro = random.choice(self.intro_templates[format_type]).format(fact=fact_content)
+        main = random.choice(self.main_content_templates[format_type]).format(fact=fact_content)
+        outro = random.choice(self.outro_templates[format_type]).format(fact=fact_content)
+        
+        # Add a random transition
+        transition = random.choice([
+            "This is particularly interesting when you consider the broader context.",
+            "When you think about it, this reveals something profound about our world.",
+            "It's these kinds of discoveries that make learning so rewarding.",
+            "This fact has fascinated people for generations.",
+            "Scientists continue to study this phenomenon to understand it better."
+        ])
+        
+        # Generate full script
+        full_script = f"""
+[INTRO]
+{intro}
+
+[MAIN CONTENT]
+{main}
+
+{transition}
+
+[OUTRO]
+{outro}
+        """
+        
+        # Parse target length to seconds
+        if isinstance(target_length, str) and "seconds" in target_length:
+            try:
+                estimated_duration = int(target_length.split()[0])
+            except (ValueError, IndexError):
+                estimated_duration = 60  # Default to 60 seconds
+        else:
+            estimated_duration = 60
+        
+        # Create script sections for video assembly
+        sections = [
+            {"type": "intro", "text": intro, "duration": int(estimated_duration * 0.2)},
+            {"type": "main", "text": main, "duration": int(estimated_duration * 0.5)},
+            {"type": "transition", "text": transition, "duration": int(estimated_duration * 0.1)},
+            {"type": "outro", "text": outro, "duration": int(estimated_duration * 0.2)}
+        ]
+        
+        # Create script data
         script_data = {
-            "title": title,
-            "intro": intro,
-            "facts": facts,
-            "transitions": [main_content[i] for i in range(1, len(main_content), 2)] if len(main_content) > 1 else [],
-            "conclusion": conclusion,
-            "full_script": "\n\n".join(full_script),
-            "word_count": len("\n\n".join(full_script).split()),
-            "fact_count": len(facts)
+            "id": kwargs.get('id', random.randint(1000, 9999)),
+            "fact_id": fact_data.get('id', 0),
+            "title": f"Did You Know: {fact_content[:50]}{'...' if len(fact_content) > 50 else ''}",
+            "content": full_script,
+            "full_script": full_script,
+            "format": format_type,
+            "length": target_length,
+            "estimated_duration": estimated_duration,
+            "sections": sections,
+            "created_at": datetime.now().isoformat()
         }
         
         return script_data
-        
-    def create_script_with_sections(self,
-                                  facts: List[Dict[str, Any]],
-                                  title: Optional[str] = None,
-                                  include_sources: bool = False) -> Dict[str, Any]:
+    
+    def get_available_formats(self) -> List[Dict[str, Any]]:
         """
-        Create a script with clearly defined sections for video creation
+        Get available script formats
         
-        Args:
-            facts: List of fact dictionaries
-            title: Optional custom title
-            include_sources: Whether to include sources
-            
         Returns:
-            Dictionary with script sections and metadata
+            List of format dictionaries with name and description
         """
-        # Get basic script
-        script_data = self.create_script(
-            facts, 
-            title=title,
-            include_sources=include_sources
-        )
-        
-        # Create structured sections for video creation
-        sections = []
-        
-        # Add intro section
-        sections.append({
-            "type": "intro",
-            "text": script_data["intro"],
-            "duration": 8  # Approximate seconds
-        })
-        
-        # Add fact sections with transitions
-        for i, fact in enumerate(facts):
-            # Add fact
-            sections.append({
-                "type": "fact",
-                "text": fact["text"],
-                "source": fact.get("source", ""),
-                "category": fact.get("category", ""),
-                "fact_number": i + 1,
-                "duration": 10  # Approximate seconds per fact
-            })
-            
-            # Add transition (except after last fact)
-            if i < len(facts) - 1:
-                transition_text = script_data["transitions"][i] if i < len(script_data["transitions"]) else random.choice(self.transition_templates)
-                sections.append({
-                    "type": "transition",
-                    "text": transition_text,
-                    "duration": 3  # Approximate seconds
-                })
-                
-        # Add conclusion section
-        sections.append({
-            "type": "conclusion",
-            "text": script_data["conclusion"],
-            "duration": 8  # Approximate seconds
-        })
-        
-        # Calculate total duration
-        total_duration = sum(section["duration"] for section in sections)
-        
-        # Add sections to script data
-        script_data["sections"] = sections
-        script_data["estimated_duration"] = total_duration
-        
-        return script_data
-        
-    def format_script_for_tts(self, script_data: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """
-        Format script for text-to-speech processing
-        
-        Args:
-            script_data: Script data from create_script_with_sections
-            
-        Returns:
-            List of dictionaries with text and metadata for TTS
-        """
-        tts_segments = []
-        
-        for section in script_data.get("sections", []):
-            tts_segments.append({
-                "text": section["text"],
-                "type": section["type"],
-                "duration": section["duration"],
-                "fact_number": section.get("fact_number", None)
-            })
-            
-        return tts_segments
+        return [
+            {
+                "name": "Conversational",
+                "description": "Friendly, casual tone like talking to a friend"
+            },
+            {
+                "name": "Educational",
+                "description": "More formal, focused on learning and understanding"
+            },
+            {
+                "name": "Entertaining",
+                "description": "Energetic, exciting tone focused on amazement"
+            }
+        ]
