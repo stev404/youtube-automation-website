@@ -457,35 +457,44 @@ elif page == "Publishing":
             redirect_uri = st.text_input("Redirect URI", "https://youtube-automation-backwnd-4.onrender.com/oauth2callback") 
             channel_id = st.text_input("Channel ID (optional)")
         
-        if st.button("Authenticate"):
-            if client_id and client_secret:
-                try:
-                    with st.spinner("Authenticating with YouTube..."):
-                        # Initialize YouTube API
-                        youtube_api = YouTubeAPI(
-                            client_id=client_id,
-                            client_secret=client_secret,
-                            redirect_uri=redirect_uri
-                        )
-                        
-                        # Authenticate
-                        youtube_api.authenticate()
-                        
-                        # Get channel info
-                        channel_info = youtube_api.get_channel_info()
-                        
-                        # Store in session state
-                        st.session_state.youtube_api = youtube_api
-                        st.session_state.is_authenticated = True
-                        st.session_state.channel_info = channel_info
-                        
-                        channel_name = channel_info.get('snippet', {}).get('title', 'Your Channel')
-                        st.success(f"Authentication successful! Connected to YouTube channel: {channel_name}")
-                except Exception as e:
-                    st.error(f"Authentication failed: {str(e)}")
-                    st.info("Please make sure your credentials are correct and you have a YouTube channel set up.")
-            else:
-                st.error("Please enter your Client ID and Client Secret.")
+if st.button("Authenticate"):
+    if client_id and client_secret:
+        try:
+            with st.spinner("Authenticating with YouTube..."):
+                # Save client credentials to a file
+                client_config = {
+                    "installed": {
+                        "client_id": client_id,
+                        "client_secret": client_secret,
+                        "redirect_uris": ["http://localhost:8501/oauth2callback"],
+                        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                        "token_uri": "https://oauth2.googleapis.com/token"
+                    }
+                }
+                
+                with open(config.CLIENT_SECRETS_FILE, "w")  as f:
+                    import json
+                    json.dump(client_config, f)
+                
+                # Now authenticate using the saved file
+                youtube_api = setup_youtube_api(client_secrets_file=config.CLIENT_SECRETS_FILE)
+                
+                # Get channel info
+                channel_info = youtube_api.get_channel_info()
+                
+                # Store in session state
+                st.session_state.youtube_api = youtube_api
+                st.session_state.is_authenticated = True
+                st.session_state.channel_info = channel_info
+                
+                channel_name = channel_info.get('snippet', {}).get('title', 'Your Channel')
+                st.success(f"Authentication successful! Connected to YouTube channel: {channel_name}")
+        except Exception as e:
+            st.error(f"Authentication failed: {str(e)}")
+            st.info("Please make sure your credentials are correct and you have a YouTube channel set up.")
+    else:
+        st.error("Please enter your Client ID and Client Secret.")
+
     
     # Publish Videos tab
     with tabs[1]:
