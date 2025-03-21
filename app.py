@@ -1,13 +1,25 @@
+# app.py (Streamlit frontend) 
 import streamlit as st
 import requests
 import json
 import os
 from datetime import datetime
 import time
-from youtube_integration import YouTubeAPI
+from youtube_api_implementation import setup_youtube_api
 from fact_generation import FactGenerator
 from script_creation import ScriptGenerator
 from video_assembly import VideoAssembler
+import config
+
+# Initialize YouTube API
+@st.cache_resource
+def get_youtube_api():
+    try:
+        return setup_youtube_api(token_file=config.TOKEN_FILE)
+    except Exception as e:
+        st.error(f"Error initializing YouTube API: {str(e)}")
+        return None
+
 
 # Page configuration
 st.set_page_config(
