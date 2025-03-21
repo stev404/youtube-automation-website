@@ -113,43 +113,65 @@ def generate_scripts():
     script_length = data.get('length', '60 seconds')
     
     # Different intro templates based on format
-    intro_templates = {
-        'Conversational': [
-            # Add at least 4 templates here
-        ],
-        'Educational': [
-            # Add at least 4 templates here
-        ],
-        'Entertaining': [
-            # Add at least 4 templates here
-        ]
-    }
-    
-    # Different main content templates
-    main_content_templates = {
-        'Conversational': [
-            # Add at least 3 templates here
-        ],
-        'Educational': [
-            # Add at least 3 templates here
-        ],
-        'Entertaining': [
-            # Add at least 3 templates here
-        ]
-    }
-    
-    # Different outro templates
-    outro_templates = {
-        'Conversational': [
-            # Add at least 3 templates here
-        ],
-        'Educational': [
-            # Add at least 3 templates here
-        ],
-        'Entertaining': [
-            # Add at least 3 templates here
-        ]
-    }
+intro_templates = {
+    'Conversational': [
+        "Hey there! Did you know that {fact}? That's pretty amazing, right?",
+        "Welcome back to our channel! Today we're exploring an incredible fact: {fact}",
+        "Here's something that might surprise you... {fact}. Let's dive deeper into this!",
+        "I bet you didn't know that {fact}. It's one of those fascinating tidbits that makes life interesting."
+    ],
+    'Educational': [
+        "Today we're exploring an important fact: {fact}. This has significant implications for how we understand our world.",
+        "In this educational video, we'll examine the following fact: {fact}. Let's analyze what this means.",
+        "Welcome to our learning series! Today's fascinating topic centers around this fact: {fact}",
+        "The following information might change your perspective: {fact}. Let's explore the science behind this."
+    ],
+    'Entertaining': [
+        "You won't believe this, but {fact}! Mind-blowing, right?",
+        "Prepare to have your mind blown! {fact} - and that's just the beginning of today's amazing facts!",
+        "This is going to sound crazy, but {fact}! Let's talk about why this is so incredible!",
+        "Wait until you tell your friends this one... {fact}! Their reactions will be priceless!"
+    ]
+}
+
+# Different main content templates
+main_content_templates = {
+    'Conversational': [
+        "Let's think about what this means. {fact} is fascinating because it shows us how complex our world really is. Many people don't realize the implications of this information.",
+        "When you consider that {fact}, it makes you wonder what other amazing things we still don't know about our world. Scientists continue to study this phenomenon.",
+        "I find it incredible that {fact}. It's these kinds of details that make learning about our world so rewarding. There's always something new to discover."
+    ],
+    'Educational': [
+        "To understand why {fact}, we need to examine the underlying principles. This phenomenon occurs because of specific conditions that create this remarkable outcome.",
+        "The fact that {fact} has been verified through multiple studies. Researchers have documented this through careful observation and experimentation.",
+        "When we analyze {fact} more carefully, we can see how this connects to broader patterns in our world. This is consistent with what we know about related phenomena."
+    ],
+    'Entertaining': [
+        "Can you imagine if {fact} wasn't true? Our world would be completely different! This is the kind of mind-blowing information that makes reality stranger than fiction.",
+        "I was shocked when I first learned that {fact}! It's one of those facts that sounds made up but is absolutely true. The universe is full of surprises!",
+        "The next time you're at a party, try telling people that {fact}. Watch their jaws drop! It's the perfect conversation starter."
+    ]
+}
+
+# Different outro templates
+outro_templates = {
+    'Conversational': [
+        "Thanks for watching! If you enjoyed learning about {fact}, make sure to like and subscribe for more fascinating content.",
+        "I hope you found this information about {fact} as interesting as I did. See you in the next video!",
+        "Now that you know {fact}, be sure to share this video with someone who would appreciate this knowledge!"
+    ],
+    'Educational': [
+        "Understanding that {fact} helps us build a more complete picture of our world. Join us next time for more educational content.",
+        "We hope this explanation of why {fact} has been informative. Don't forget to subscribe for more in-depth explorations.",
+        "Continue your learning journey with us as we explore more fascinating facts like {fact} in our upcoming videos."
+    ],
+    'Entertaining': [
+        "Wasn't that amazing? Now you can amaze your friends by telling them that {fact}! Don't forget to like and subscribe!",
+        "Mind = blown! {fact} is just one of the incredible facts we share on this channel. Stay tuned for more!",
+        "If you enjoyed learning that {fact}, smash that like button and subscribe for more mind-blowing content!"
+    ]
+}
+
     
     generated_scripts = []
     for fact_id in fact_ids:
