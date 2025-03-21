@@ -1,4 +1,3 @@
-# config.py
 import os
 
 # Paths
@@ -12,7 +11,7 @@ CLIENT_SECRETS_FILE = os.path.join(BASE_DIR, "client_secret.json")
 os.makedirs(ASSETS_DIR, exist_ok=True)
 os.makedirs(os.path.join(ASSETS_DIR, "images"), exist_ok=True)
 os.makedirs(os.path.join(ASSETS_DIR, "music"), exist_ok=True)
-os.makedirs(OUTPUT_DIR, exist_ok=True)  # This line was incorrect
+os.makedirs(OUTPUT_DIR, exist_ok=True)  # Fixed this line
 
 # YouTube API settings
 YOUTUBE_API_SCOPES = [
